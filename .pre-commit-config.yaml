@@ -1,0 +1,46 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-added-large-files
+-   repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        name: isort (python)
+        args: ["--profile", "black", "--filter-files"]
+-   repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+    -   id: black
+        language: python
+        types: [python]
+-   repo: https://github.com/PyCQA/flake8
+    rev: 6.0.0
+    hooks:
+    - id: flake8
+      exclude: docs/conf.py
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.4.1
+    hooks:
+      - id: mypy
+      # Note: since we run mypy on the tests/ folder also we need to add pytest as
+      #       additional dependency
+        additional_dependencies: [platformdirs==4.0.0, configparser==6.0.0,
+                                  pytest==7.4.3, pytest-mock==3.12.0, click==8.1.7]
+        args: [--strict, --implicit-reexport]
+        pass_filenames: false
+        entry: mypy src tests
+-   repo: local
+    hooks:
+      - id: coverage
+        name: coverage
+        language: system
+        entry: bash -c 'coverage run -m pytest tests && coverage report -m'
+        always_run: true
+        pass_filenames: false
