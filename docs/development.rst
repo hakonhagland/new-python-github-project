@@ -2,7 +2,7 @@ Suggesting changes to the code
 ==============================
 
 Suggestions for improvements are very welcome. Please use the
-`GitHub issue tracker <https://github.com/hakonhagland/vscode_cli_helpers.open_file/issues>`_ or submit
+`GitHub issue tracker <https://github.com/hakonhagland/new-python-github-project/issues>`_ or submit
 a pull request!
 
 Pull request
@@ -12,7 +12,7 @@ To set up an environment for developing and submitting a pull request, you could
 
 * Install pyenv
 * Install the python versions listed in
-  `.python_version <https://github.com/hakonhagland/vscode_cli_helpers.open_file/blob/main/.python-version>`_ with pyenv
+  `.python_version <https://github.com/hakonhagland/new-python-github-project/blob/main/.python-version>`_ with pyenv
 * On Linux and macOS:
    * Install Poetry : Run : ``curl -sSL https://install.python-poetry.org | python3 -``
    * On macOS: update PATH environment variable in your `~/.zshrc` init file:
