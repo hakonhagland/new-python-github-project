@@ -1,8 +1,8 @@
 ROOT := $(shell pwd)
 DOCKERDIR := $(ROOT)/docker
 
-.PHONY: coverage docs mypy test flake8 tox
-.PHONY: black-check black publish-to-pypi isort
+.PHONY: coverage docs mypy ruff-check ruff-fix ruff-format test tox
+.PHONY: docker-image docker-container publish-to-pypi rstcheck
 
 coverage:
 	coverage run -m pytest tests
@@ -19,27 +19,31 @@ docker-container:
 docs:
 	cd "$(ROOT)"/docs && make clean && make html
 
-isort:
-	isort --diff --check-only --profile black src/ tests/
-	isort --diff --profile black src/ tests/
-
 mypy:
-	mypy src/ tests/
+	mypy --strict src/ tests/
+
+publish-to-pypi:
+	uv build
+	twine upload dist/*
+
+# NOTE: to avoid rstcheck to fail on info-level messages, we set the report-level to WARNING
+rstcheck:
+	rstcheck --report-level=WARNING -r docs/
+
+ruff-check:
+	ruff check src tests
+
+ruff-fix:
+	ruff check --fix src tests
+
+ruff-format:
+	ruff format src tests
 
 test:
 	pytest tests/
 
-flake8:
-	flake8 src/ tests/
-
-black-check:
-	black --diff --color src/ tests/
-
-black:
-	black src/ tests/
-
-publish-to-pypi:
-	poetry publish --build
-
 tox:
 	tox
+
+view-docs:
+	@xdg-open "file://$(ROOT)/docs/_build/html/index.html"

@@ -1,0 +1,38 @@
+---
+alwaysApply: true
+---
+## Information about the project:
+- This Python project's aim is to develop a PyQT6 app that allows the user to quickly initialize and setup a new python project file structure. Including a src and test directory, a pyproject.toml file, a docs directory, a .git directory, a .github directory for github actions and more.
+- The user can customize the app using a config file and various templates
+- The QT gui for the will consist of a main window that is divided into three area vertically
+- The three areas will be referred to as A1 (tasks), A2 (actions), and A3 (terminal output).
+- A1 will be at the top of the main window, A2 will occupy the middle part, and A3 will occupy the bottom of the window.
+- In A1, a list of tasks will be presented. Some of the tasks will require an action from the user, while others do not necessarily require any actions, since they have valid default actions, or valid default values taken from
+the user's config file
+- In A2, a row of action button is shown. E.g. "Create" to create the new project structure
+- In A3, a terminal output area (emulating a shell terminal output) will be shown. This allows the app to output log messages without being connected to an interactive (linux) terminal.
+- When a task item is click in A1, there will usually be opened a dialog to allow the user to supply input
+parameters for that task
+## State of the project (TODO)
+- No unit tests have yet been created. We need to add tests to cover 100% of the source files in the src directory
+- No sphinx docs have yet been added. We need to add good documentation.
+- Many of the actions in A1 have not yet been implemented. We need to implement all actions.
+## Instructions to the AI agent:
+- The project itself is a Git project
+- (A) For each chat interaction with the user, and for each response within a given chat session:
+    - Before changing or adding any files: check if there are any uncommitted files on the current branch:
+   - If there is any: Run "git add ."
+   - Create a commit message for the added files
+   - Run "git commit -m" with the message
+- (B) One exception to (A) above: If the AI chat response/comment is to fix an error with the previous response (e.g. compilation error or similar), then it might not be necessary to create a new commit yet. So in this case ask the user if they will continue without commiting changes yet
+- (C) The user can also ask the AI specifically to create a Git commit. Then the AI should follow the steps listed in (A) above
+
+## Python style
+- Assume the reader of the code knows Python, but not anything about the particular project being implemented
+- Prefer to have docstrings for every function and class
+- Keep the number of lines in a method as small as possible without sacrificing readability
+- What I mean by readability of a method/function: Keep just as much detail as needed for the reader
+to get a clear understanding of what the method does.
+- Refactor out details to helper functions or helper classes.
+- Line comments: Comment only non-obvious things
+

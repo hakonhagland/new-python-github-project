@@ -1,84 +1,12 @@
 import logging
-import platform
-import subprocess
 import sys
 
 import click
 
 from new_python_github_project.config import Config
-from new_python_github_project.exceptions import ConfigException
-
-
-def check_runtime_deps() -> bool:
-    """Check that the runtime dependencies are installed."""
-    return check_poetry_installed()
-
-
-def check_poetry_installed() -> bool:
-    dep = "poetry"
-    try:
-        # NOTE: poetry must be installed outside the virtual environment
-        #  see https://python-poetry.org/docs/#installation
-        #  This ensures that Poetry’s own dependencies will not be accidentally
-        #  upgraded or uninstalled.
-        subprocess.run(
-            ["poetry", "--version"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-    except FileNotFoundError:
-        logging.error(f"Missing runtime dependency: {dep}. Please install it first")
-        return False
-    return True
-
-def edit_config_file(config: Config) -> None:
-    """Edit the config file."""
-    config_path = config.get_config_file()
-    cfg = config.config["Editor"]
-    if platform.system() == "Linux":
-        editor = cfg["Linux"]
-        cmd = editor
-        args = [str(config_path)]
-    elif platform.system() == "Darwin":
-        cmd = "open"
-        editor = cfg["MacOS"]
-        args = ["-a", editor, str(config_path)]
-    elif platform.system() == "Windows":
-        editor = cfg["Windows"]
-        cmd = editor
-        args = [str(config_path)]
-    else:
-        raise ConfigException(f"Unknown platform: {platform.system()}")
-    logging.info(f"Running: {cmd} {args}")
-    try:
-        subprocess.Popen([cmd, *args], start_new_session=True)
-    except FileNotFoundError as e:
-        logging.error(f"{e}")
-        logging.error(f"Editor not found: {editor}. Please install it first")
-
-
-def read_config() -> dict:
-    """Read the configuration file."""
-
-    config = Config()
-    config.read_config()
-    return config
-
-
-def run_init_poetry(config: Config, project_name: str) -> None:
-    """Run "poetry new" to create a new project."""
-
-    subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "poetry",
-            "new",
-            "--src",
-            project_name,
-        ]
-    )
-
+from new_python_github_project import helpers
+from new_python_github_project import runtime
+from new_python_github_project.main_window import MainWindow
 
 @click.group()
 @click.option("--verbose", "-v", is_flag=True, help="Show verbose output")
@@ -95,41 +23,31 @@ def main(ctx: click.Context, verbose: bool) -> None:
         logging.basicConfig(level=logging.WARNING)
 
 
+
 @main.command()
-@click.argument("project_name", required=True, type=str)
-def create(project_name: str) -> None:
+def create() -> None:
     """Create a new Python project on GitHub.
-
-    ARGUMENTS:
-    ----------
-
-    PROJECT_NAME (str): Name of the project. This is the same as the Python module
-    name. Use lowercase name with undescores and dots to separate packages and modules,
-    as recommended in PEP8, do not use hyphens.
-
-    EXAMPLES:
-    ---------
-
-    $ new-python-github-project my_module
-    $ new-python-github-project my_package.my_module
-
-    In the first example, the Python module name is "my_module" and the corresponding PyPI
-    project name is "my-module". In the second example, the Python module name is
-    "my_package.my_module" and the corresponding PyPI project name is "my-package-my-module".
+    
+    This will start a GUI application that helps you create a new Python project.
+    The application will run in the background, detached from the terminal.
     """
-    if check_runtime_deps():
-        config = read_config()
-        run_init_poetry(config, project_name)
-        click.echo("Hello World!")
+    config = Config()
+    helpers.check_another_instance_running(config)
+    runtime.check_deps()
+    helpers.detach_from_terminal(config)
+    app = helpers.create_qapplication(config)
+    # All the work is done by the MainWindow callbacks
+    window = MainWindow()
+    # Start the event loop
+    sys.exit(app.exec())
 
 
 @main.command()
 @click.pass_context
 def edit_config(ctx: click.Context) -> None:
     """Edit the configuration file."""
-    if check_runtime_deps():
-        config = read_config()
-        edit_config_file(config)
+    config = Config()
+    helpers.edit_config_file(config)
 
 
 if __name__ == "__main__":  # pragma: no cover
