@@ -36,7 +36,8 @@ def create(ctx: click.Context) -> None:
     helpers.detach_from_terminal(config, ctx)
     app = helpers.create_qapplication(config)
     # All the work is done by the MainWindow callbacks
-    _ = MainWindow(app, config)  # noqa: F841
+    window = MainWindow(app, config)  # noqa: F841
+    window.show()
     # Start the event loop
     sys.exit(app.exec())
 
