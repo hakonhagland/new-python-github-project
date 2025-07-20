@@ -1,6 +1,7 @@
 import configparser
 import importlib.resources
 import logging
+import os
 import shutil
 import typing
 
@@ -11,6 +12,7 @@ import platformdirs
 
 from new_python_github_project.exceptions import ConfigException
 from new_python_github_project.constants import Directories, FileNames
+
 
 class Config:
     # NOTE: These are made class variables since they must be accessible from
@@ -25,7 +27,11 @@ class Config:
     def __init__(self) -> None:
         self.config_dir = self.get_config_dir()
         self.config_path = Path(self.config_dir) / self.config_fn
+        logging.info(f"Config directory: {str(self.config_dir)}")
+        logging.info(f"Config file: {str(self.config_path)}")
+        logging.info("Reading config file...")
         self.read_config()
+        logging.info("Config read")
 
     def check_correct_config_dir(self, lock_file: Path) -> None:
         """The config dir might be owned by another app with the same name"""
@@ -99,14 +105,12 @@ class Config:
             logging.info(
                 f"No template found for {filename}. Looking for a default template..."
             )
-            default_path = (importlib.resources.files(
+            default_path = importlib.resources.files(
                 "new_python_github_project.data.templates"
-            ).joinpath(filename))
+            ).joinpath(filename)
             default_path = typing.cast(Path, default_path)
             if not default_path.exists():
-                raise ConfigException(
-                    f"No default template found for {filename}."
-                )
+                raise ConfigException(f"No default template found for {filename}.")
             # Read the default template
             with open(str(default_path), "r", encoding="utf_8") as fp:
                 template = fp.read()
@@ -118,7 +122,6 @@ class Config:
             with open(path, "r", encoding="utf_8") as fp:
                 template = fp.read()
         return template
-
 
     def read_config(self) -> None:
         path = self.get_config_file()

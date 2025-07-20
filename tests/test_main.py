@@ -27,11 +27,14 @@ class TestMain:
     ) -> None:
         caplog.set_level(logging.INFO)
         mocker.patch(
-            "new_python_github_project.main.subprocess.Popen",
+            "new_python_github_project.runtime.subprocess.run",
             side_effect=FileNotFoundError,
         )
-        result = main.check_runtime_deps()
-        assert not result
+        with caplog.at_level(logging.ERROR):
+            try:
+                main.runtime.check_deps()
+            except SystemExit:
+                pass
         assert caplog.records[-1].msg.startswith(
-            "Missing runtime dependency: poetry. Please install it first"
+            "Missing runtime dependency: uv. Please install it first"
         )

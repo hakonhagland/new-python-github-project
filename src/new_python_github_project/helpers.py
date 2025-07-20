@@ -3,34 +3,19 @@ import sys
 import platform
 import subprocess
 import logging
+import json
+
+import click
+from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QApplication
+from PyQt6.QtGui import QIcon
+
 from new_python_github_project.config import Config
-from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QApplication, QIcon
-
-
-def add_app_to_tray(app: QApplication) -> None:
-    """Add the application to the system tray."""
-
-    tray_icon = QSystemTrayIcon(QIcon.fromTheme("applications-python"), parent=app)
-    tray_menu = QMenu()
-    show_action = tray_menu.addAction("Show")
-    quit_action = tray_menu.addAction("Quit")
-    tray_icon.setContextMenu(tray_menu)
-    tray_icon.setToolTip("Python Project Creator")
-    tray_icon.show()
-    def on_quit():
-        config.remove_lockfile()
-        app.quit()
-    quit_action.triggered.connect(on_quit)
-
-    def on_show():
-        # Placeholder: bring main window to front if implemented
-        pass
-    show_action.triggered.connect(on_show)
+from new_python_github_project.exceptions import ConfigException
 
 
 def check_another_instance_running(config: Config) -> None:
     """Check if another instance of the application is running.
-    
+
     We do not want two or more instances of the application running at the same time, since
     this could mess up log files and other files.
     This function checks if another instance is running by checking the lockfile.
@@ -46,7 +31,9 @@ def check_another_instance_running(config: Config) -> None:
             if pid > 0:
                 try:
                     os.kill(pid, 0)
-                    logging.error(f"Another instance of the application is already running. Exiting.")
+                    logging.error(
+                        "Another instance of the application is already running. Exiting."
+                    )
                     sys.exit(1)
                 except OSError:
                     logging.error(f"Process {pid} is not running. Removing lockfile.")
@@ -57,12 +44,13 @@ def check_another_instance_running(config: Config) -> None:
             config.remove_lockfile()
             return
 
+
 def create_qapplication(config: Config) -> QApplication:
     """Create a new QApplication instance."""
     app = QApplication(sys.argv)
-    app.setStyle('Fusion')
+    app.setStyle("Fusion")
     app.setQuitOnLastWindowClosed(False)
-    add_app_to_tray(app)
+    _add_app_to_tray(app, config)
     app.aboutToQuit.connect(config.remove_lockfile)
     return app
 
@@ -70,19 +58,28 @@ def create_qapplication(config: Config) -> QApplication:
 # Since this is a GUI application, it is appropriate to detach it from the terminal. This enables the
 # user to close the terminal without killing the application.
 # TODO: Check if there is a PyPI module that does this.
-def daemonize(config: Config) -> None:
+def daemonize(config: Config, verbose: bool = False) -> None:
     """Detach the process from the terminal and run in the background.
-    
+
     This function:
     1. Forks a child process
     2. Creates a new session
     3. Redirects standard I/O to /dev/null
     4. Changes working directory to root
+    5. Reconfigures logging for the daemon process
+
+    :param config: Configuration object
+    :type config: Config
+    :param verbose: Whether to use verbose logging in daemon
+    :type verbose: bool
     """
     # Fork the first time
     try:
         pid = os.fork()
         if pid > 0:
+            logging.info(
+                f"Fork #1 successful. Forked child process with PID {pid}. Parent process exiting."
+            )
             # Parent process exits
             os._exit(0)
     except OSError as e:
@@ -98,6 +95,7 @@ def daemonize(config: Config) -> None:
     try:
         pid = os.fork()
         if pid > 0:
+            logging.info("Fork #2 successful. Parent process exiting.")
             # Parent process exits
             os._exit(0)
     except OSError as e:
@@ -114,17 +112,27 @@ def daemonize(config: Config) -> None:
         os.dup2(f.fileno(), sys.stdout.fileno())
         os.dup2(f.fileno(), sys.stderr.fileno())
 
+    # Reconfigure logging for the daemon process
+    _setup_daemon_logging(str(log_path), verbose)
 
-def detach_from_terminal(config: Config) -> None:
-    """Detach the process from the terminal if not already detached."""
+
+def detach_from_terminal(config: Config, ctx: click.Context) -> None:
+    """Detach the process from the terminal if not already detached.
+
+    :param config: Configuration object
+    :type config: Config
+    :param ctx: Click context
+    :type ctx: click.Context
+    """
     if os.getpgrp() == os.tcgetpgrp(sys.stdout.fileno()):
-        daemonize(config)
+        verbose = ctx.obj.get("VERBOSE", False)
+        daemonize(config, verbose)
     config.write_lockfile()
 
 
 def edit_config_file(config: Config) -> None:
     """Edit the config file.
-    
+
     This function opens the config file in the user's preferred editor.
     """
     config_path = config.get_config_file()
@@ -153,3 +161,131 @@ def edit_config_file(config: Config) -> None:
             f"the config file {config_path} manually and select another editor"
         )
 
+
+def debug_to_file(
+    message: str, data: dict | None = None, debug_file: str = "/tmp/pyqt_debug.log"
+) -> None:
+    """Write debug information to a file for daemon debugging.
+
+    This is the recommended way to debug daemonized applications since
+    breakpoint() doesn't work without an interactive terminal.
+
+    :param message: Debug message
+    :type message: str
+    :param data: Optional data to log as JSON
+    :type data: dict
+    :param debug_file: Path to debug log file
+    :type debug_file: str
+    """
+    import datetime
+
+    timestamp = datetime.datetime.now().isoformat()
+
+    debug_info = {
+        "timestamp": timestamp,
+        "pid": os.getpid(),
+        "ppid": os.getppid(),
+        "message": message,
+    }
+
+    if data:
+        debug_info["data"] = data
+
+    try:
+        with open(debug_file, "a") as f:
+            f.write(json.dumps(debug_info) + "\n")
+    except Exception as e:
+        # Fallback to stderr if file writing fails
+        print(f"DEBUG ERROR: {e}", file=sys.stderr)
+
+
+def setup_remote_debugging(host: str = "localhost", port: int = 5678) -> None:
+    """Setup remote debugging with debugpy.
+
+    This allows you to connect a debugger (like VS Code) to the daemonized process.
+    Call this function before daemonizing.
+
+    :param host: Host to bind debug server to
+    :type host: str
+    :param port: Port for debug server
+    :type port: int
+    """
+    try:
+        import debugpy
+
+        debugpy.listen((host, port))
+        debug_to_file(f"Remote debugging enabled on {host}:{port}")
+        print(f"Remote debugging enabled on {host}:{port}")
+        print("Connect your debugger to this address")
+    except ImportError:
+        debug_to_file("debugpy not installed. Install with: pip install debugpy")
+        print("debugpy not installed. Install with: pip install debugpy")
+
+
+# -----------------------------------------------------
+# Private functions
+# -----------------------------------------------------
+
+
+def _add_app_to_tray(app: QApplication, config: Config) -> None:
+    """Add the application to the system tray."""
+
+    tray_icon = QSystemTrayIcon(QIcon.fromTheme("applications-python"), parent=app)
+    tray_menu = QMenu()
+    show_action = tray_menu.addAction("Show")
+    quit_action = tray_menu.addAction("Quit")
+    tray_icon.setContextMenu(tray_menu)
+    tray_icon.setToolTip("Python Project Creator")
+    tray_icon.show()
+
+    def on_quit():
+        config.remove_lockfile()
+        app.quit()
+
+    if quit_action is not None:
+        quit_action.triggered.connect(on_quit)
+
+    def on_show():
+        # Placeholder: bring main window to front if implemented
+        pass
+
+    if show_action is not None:
+        show_action.triggered.connect(on_show)
+
+
+def _setup_daemon_logging(log_path: str, verbose: bool = False) -> None:
+    """Setup logging for the daemon process after forking.
+
+    This reconfigures the logging module to write to the log file
+    instead of the original terminal handlers.
+
+    :param log_path: Path to the log file
+    :type log_path: str
+    :param verbose: Whether to use verbose logging
+    :type verbose: bool
+    """
+    # Remove all existing handlers
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    # Create new file handler
+    file_handler = logging.FileHandler(log_path, mode="a")
+
+    # Set format similar to basicConfig
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    file_handler.setFormatter(formatter)
+
+    # Add handler to root logger
+    root_logger.addHandler(file_handler)
+
+    # Set log level based on verbose flag
+    if verbose:
+        root_logger.setLevel(logging.INFO)
+    else:
+        root_logger.setLevel(logging.WARNING)
+
+    # Log that we've switched to daemon logging
+    logging.info("Daemon logging initialized")
