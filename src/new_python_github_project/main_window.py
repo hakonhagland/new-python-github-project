@@ -20,15 +20,36 @@ from new_python_github_project.task import Task, TaskItemWidget
 
 
 class TaskListFrame(QFrame):
-    """Frame containing the task list with scrollable area."""
+    """Frame containing the task list with scrollable area.
+
+    This class provides a scrollable list of tasks that users need to complete
+    before creating a new Python project. Tasks are organized in logical sections
+    and some have default values while others require user input.
+
+    :param parent: Parent widget, defaults to None
+    :type parent: QWidget, optional
+
+    .. versionadded:: 1.0.0
+    """
 
     def __init__(self, parent=None):
+        """Initialize the TaskListFrame.
+
+        Sets up the UI and loads sample tasks for the project creation workflow.
+
+        :param parent: Parent widget
+        :type parent: QWidget, optional
+        """
         super().__init__(parent)
         self.setup_ui()
         self.load_sample_tasks()
 
     def setup_ui(self):
-        """Setup the task list frame."""
+        """Setup the task list frame UI components.
+
+        Creates the main layout, title label, scroll area, and container widget
+        for the task items. Configures scrolling behavior and frame styling.
+        """
         # Main layout
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
@@ -62,26 +83,30 @@ class TaskListFrame(QFrame):
         self.setFrameStyle(QFrame.Shape.Box)
 
     def load_sample_tasks(self):
-        """Load sample tasks for testing.
+        """Load sample tasks for the project creation workflow.
 
-        TASK ORDERING LOGIC:
-        The tasks are ordered in a logical workflow sequence that follows the natural
-        progression of setting up a Python project. This ordering is designed to:
+        Creates and loads tasks organized in logical sections that follow the natural
+        progression of setting up a Python project. Tasks are ordered to minimize
+        cognitive load and follow dependencies.
 
-        1. Start with fundamental project identity (name, directory)
-        2. Move to technical foundation choices (Python version, license)
-        3. Add project metadata (description, author)
-        4. Configure development tools (testing framework, code style)
-        5. Finish with deployment/repository settings
+        **Task Ordering Logic:**
 
-        This order minimizes cognitive load by grouping related tasks together and
-        follows dependencies (e.g., package name comes after project name).
+        1. **Project Fundamentals**: Name, directory location
+        2. **Technical Foundation**: Python version, license
+        3. **Project Metadata**: Description, author information
+        4. **Development Tools**: Testing framework, code style
+        5. **Deployment & Repository**: Repository URL
 
-        WHEN ADDING NEW TASKS:
+        **When Adding New Tasks:**
+
         - Consider where the task fits in the logical workflow
-        - Place it in the appropriate section below
-        - Update the section comments if needed
+        - Place it in the appropriate section
+        - Update section comments if needed
         - Ensure the task description is unique
+
+        .. note::
+           Tasks with ``has_default=False`` require user input before project creation
+           can proceed. Tasks with defaults can use their default values.
         """
         import os
 
@@ -166,8 +191,15 @@ class TaskListFrame(QFrame):
     def get_incomplete_required_tasks(self):
         """Get list of tasks that require user input but are not completed.
 
-        Returns:
-            list: List of Task objects that have no default and are not completed
+        Iterates through all tasks to find those that have no default value
+        and are not yet completed by the user. These tasks must be completed
+        before project creation can proceed.
+
+        :returns: List of Task objects that have no default and are not completed
+        :rtype: list[Task]
+
+        .. seealso::
+           :class:`~new_python_github_project.task.Task` for task structure
         """
         incomplete_tasks = []
         for task in self.all_tasks:
@@ -178,14 +210,36 @@ class TaskListFrame(QFrame):
 
 
 class ActionButtonsFrame(QFrame):
-    """Frame containing action buttons."""
+    """Frame containing action buttons for project operations.
+
+    This frame provides the main action buttons for the application,
+    primarily the "Create" button that initiates project creation after
+    validating that all required tasks are completed.
+
+    :param parent: Parent widget, defaults to None
+    :type parent: QWidget, optional
+
+    .. versionadded:: 1.0.0
+    """
 
     def __init__(self, parent=None):
+        """Initialize the ActionButtonsFrame.
+
+        Sets up the UI with action buttons.
+
+        :param parent: Parent widget
+        :type parent: QWidget, optional
+        """
         super().__init__(parent)
         self.setup_ui()
 
     def setup_ui(self):
-        """Setup the action buttons frame."""
+        """Setup the action buttons frame UI components.
+
+        Creates the layout, title label, and action buttons. Currently includes
+        a "Create" button with styling and click handler. The button is positioned
+        to the left with proper spacing and visual styling.
+        """
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(5)
@@ -229,7 +283,16 @@ class ActionButtonsFrame(QFrame):
         self.setFrameStyle(QFrame.Shape.Box)
 
     def on_create_clicked(self):
-        """Handle create button click."""
+        """Handle create button click event.
+
+        Validates that all required tasks are completed before proceeding with
+        project creation. If incomplete tasks exist, shows an error dialog.
+        Otherwise, proceeds with project creation and logs progress messages.
+
+        .. note::
+           This method accesses the parent MainWindow to get the task list
+           and add log messages.
+        """
         # Get the main window and cast it to MainWindow type
         main_window = cast("MainWindow", self.window())
 
@@ -253,7 +316,17 @@ class ActionButtonsFrame(QFrame):
                 main_window.add_log_message("✅ Project setup complete!")
 
     def show_incomplete_tasks_dialog(self, incomplete_tasks):
-        """Show error dialog listing incomplete required tasks."""
+        """Show error dialog listing incomplete required tasks.
+
+        Displays a critical message box with a list of tasks that require
+        user input before project creation can proceed.
+
+        :param incomplete_tasks: List of tasks that need to be completed
+        :type incomplete_tasks: list[Task]
+
+        .. seealso::
+           :meth:`get_incomplete_required_tasks` for task validation logic
+        """
         # Build the message
         message = (
             "The following tasks require your input before creating the project:\n\n"
@@ -271,15 +344,37 @@ class ActionButtonsFrame(QFrame):
 
 
 class TerminalFrame(QFrame):
-    """Frame containing the terminal-like output area."""
+    """Frame containing the terminal-like output area.
+
+    This frame provides a read-only terminal-like interface for displaying
+    log messages and application output. Messages are timestamped and
+    automatically scrolled to keep the latest output visible.
+
+    :param parent: Parent widget, defaults to None
+    :type parent: QWidget, optional
+
+    .. versionadded:: 1.0.0
+    """
 
     def __init__(self, parent=None):
+        """Initialize the TerminalFrame.
+
+        Sets up the UI and loads sample output messages.
+
+        :param parent: Parent widget
+        :type parent: QWidget, optional
+        """
         super().__init__(parent)
         self.setup_ui()
         self.load_sample_output()
 
     def setup_ui(self):
-        """Setup the terminal frame."""
+        """Setup the terminal frame UI components.
+
+        Creates the layout, title label, and terminal text area. The terminal
+        uses a monospace font with dark theme styling and is configured as
+        read-only with word wrapping enabled.
+        """
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(5)
@@ -313,7 +408,12 @@ class TerminalFrame(QFrame):
         self.setFrameStyle(QFrame.Shape.Box)
 
     def load_sample_output(self):
-        """Load sample terminal output."""
+        """Load sample terminal output messages.
+
+        Populates the terminal with sample log messages to demonstrate
+        the output format and behavior. Includes messages of varying
+        lengths to test text wrapping.
+        """
         sample_messages = [
             "Application started successfully",
             "Loading configuration...",
@@ -331,7 +431,19 @@ class TerminalFrame(QFrame):
             self.add_log_message(message)
 
     def add_log_message(self, message):
-        """Add a log message to the terminal."""
+        """Add a log message to the terminal output.
+
+        Appends a timestamped message to the terminal and automatically
+        scrolls to keep the new message visible. The timestamp format
+        is HH:MM:SS.
+
+        :param message: The message to add to the terminal
+        :type message: str
+
+        .. note::
+           Messages are automatically timestamped with the current time
+           when they are added to the terminal.
+        """
         cursor = self.terminal.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.End)
         self.terminal.setTextCursor(cursor)
@@ -349,16 +461,50 @@ class TerminalFrame(QFrame):
 
 
 class MainWindow(QMainWindow):
-    """Main application window with three vertical areas."""
+    """Main application window with three vertical areas.
+
+    The main window implements a three-area layout design:
+
+    - **Area A1 (42.5%)**: Task list showing project configuration tasks
+    - **Area A2 (10%)**: Action buttons for project operations
+    - **Area A3 (42.5%)**: Terminal output for logging and feedback
+
+    The window automatically adjusts its size to fit the available screen space
+    and centers itself on the screen. It includes a menu bar with basic file
+    operations and provides logging capabilities for user feedback.
+
+    :param app: The QApplication instance
+    :type app: QApplication
+    :param config: Application configuration object
+    :type config: Config
+
+    .. versionadded:: 1.0.0
+    """
 
     def __init__(self, app: QApplication, config: Config):
+        """Initialize the MainWindow.
+
+        :param app: The QApplication instance
+        :type app: QApplication
+        :param config: Application configuration object
+        :type config: Config
+        """
         super().__init__()
         self.app = app
         self.config = config
         self.setup_ui()
 
     def setup_ui(self):
-        """Setup the main window UI."""
+        """Setup the main window UI components.
+
+        Creates the main window layout with three vertical areas, configures
+        window sizing based on screen dimensions, centers the window, and
+        initializes all UI components including menu bar, task list, action
+        buttons, and terminal output.
+
+        The window size is automatically adjusted if the default size exceeds
+        the available screen space, with a 50-pixel margin maintained.
+        """
         self.setWindowTitle("PyQt6 UI Testing - Three Area Layout")
 
         # Set default window size
@@ -424,7 +570,11 @@ class MainWindow(QMainWindow):
             self.add_log_message("Window size adjusted to fit screen")
 
     def setup_menu(self):
-        """Setup the menu bar."""
+        """Setup the menu bar with file operations.
+
+        Creates a File menu with a Quit action (Ctrl+Q shortcut).
+        The menu provides standard application controls and keyboard shortcuts.
+        """
         menubar = self.menuBar()
         if menubar is not None:
             # File menu
@@ -438,11 +588,34 @@ class MainWindow(QMainWindow):
                 file_menu.addAction(quit_action)
 
     def add_log_message(self, message):
-        """Add a log message to the terminal."""
+        """Add a log message to the terminal output.
+
+        Convenience method that forwards log messages to the terminal frame.
+        This allows other components to easily add messages to the terminal
+        through the main window.
+
+        :param message: The message to add to the terminal
+        :type message: str
+
+        .. seealso::
+           :meth:`TerminalFrame.add_log_message` for the actual implementation
+        """
         self.terminal_frame.add_log_message(message)
 
     def resizeEvent(self, event):
-        """Handle window resize events."""
+        """Handle window resize events.
+
+        Logs the new window dimensions to the terminal when the user
+        resizes the window. This provides feedback about the current
+        window state.
+
+        :param event: The resize event containing new dimensions
+        :type event: QResizeEvent
+
+        .. note::
+           This method overrides the base class resize event handler
+           and calls the parent implementation before logging.
+        """
         super().resizeEvent(event)
         width = event.size().width()
         height = event.size().height()

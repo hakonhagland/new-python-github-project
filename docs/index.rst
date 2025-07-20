@@ -8,6 +8,7 @@ Welcome to ``new-python-github-project``'s documentation!
     introduction
     Development <development>
     Debugging <debugging>
+    Source code <source>
 
 Indices and tables
 ==================
