@@ -50,5 +50,10 @@ packages = ["src/new_python_github_project"]
 "icons/hicolor" = "share/icons/hicolor"
 "resources/linux/new-python-github-project.desktop" = "share/applications/new-python-github-project.desktop"
 
+[tool.ruff]
+exclude = [
+    "src/new_python_github_project/data/templates/"
+]
+
 [tool.coverage.report]
 fail_under = 20

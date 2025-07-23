@@ -1,4 +1,3 @@
-import importlib.resources as resources
 import json
 import logging
 import os
@@ -58,7 +57,7 @@ def create_qapplication(config: Config) -> QApplication:
     # Set application display name
     app.setApplicationDisplayName("New Python GitHub Project")
     app.setApplicationName("New Python GitHub Project")
-    
+
     # Set application metadata for better desktop integration
     app.setOrganizationName("hakonhagland")
     app.setOrganizationDomain("github.com")
@@ -178,7 +177,9 @@ def edit_config_file(config: Config) -> None:
 
 
 def debug_to_file(
-    message: str, data: dict[str, str] | None = None, debug_file: str = "/tmp/pyqt_debug.log"
+    message: str,
+    data: dict[str, str] | None = None,
+    debug_file: str = "/tmp/pyqt_debug.log",
 ) -> None:
     """Write debug information to a file for daemon debugging.
 
@@ -251,7 +252,7 @@ def _add_app_to_tray(app: QApplication, config: Config) -> None:
     icon_128_path = os.path.join(icon_dir, "icon-128.png")
     png_icon_path = os.path.join(icon_dir, "icon.png")
     svg_icon_path = os.path.join(icon_dir, "icon.svg")
-    
+
     if os.path.exists(icon_256_path):
         tray_icon = QSystemTrayIcon(QIcon(icon_256_path), parent=app)
     elif os.path.exists(icon_128_path):
@@ -262,7 +263,7 @@ def _add_app_to_tray(app: QApplication, config: Config) -> None:
         tray_icon = QSystemTrayIcon(QIcon(svg_icon_path), parent=app)
     else:
         tray_icon = QSystemTrayIcon(QIcon.fromTheme("applications-python"), parent=app)
-    
+
     tray_menu = QMenu()
     show_action = tray_menu.addAction("Show")
     quit_action = tray_menu.addAction("Quit")
@@ -284,6 +285,7 @@ def _add_app_to_tray(app: QApplication, config: Config) -> None:
     if show_action is not None:
         show_action.triggered.connect(on_show)
 
+
 def _load_icons(app: QApplication, config: Config) -> None:
     """Load icons for the application."""
     if platform.system() == "Linux":
@@ -304,6 +306,7 @@ def _load_icons(app: QApplication, config: Config) -> None:
                 icon = QIcon.fromTheme("applications-python")
         app.setWindowIcon(icon)
 
+
 def _locate_hicolor_icons() -> Path | None:
     # Where pip placed the shared‑data files
     data_root = Path(sysconfig.get_paths()["data"]) / "share" / "icons" / "hicolor"
@@ -312,6 +315,7 @@ def _locate_hicolor_icons() -> Path | None:
     # NOTE: If the user did not install the application with "pip install --user", the icons
     #  will not be correctly installed in $XDG_DATA_DIRS/icons/hicolor on Linux.
     return None
+
 
 def _setup_daemon_logging(log_path: str, verbose: bool = False) -> None:
     """Setup logging for the daemon process after forking.
