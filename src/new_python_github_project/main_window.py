@@ -23,6 +23,7 @@ from PyQt6.QtGui import (
 from PyQt6.QtWidgets import QApplication
 from typing import cast, List, Optional
 import logging
+from pathlib import Path
 
 from new_python_github_project.config import Config
 from new_python_github_project.task import Task, TaskItemWidget
@@ -647,29 +648,27 @@ class MainWindow(QMainWindow):
         ensuring it appears correctly in the dock, taskbar, and Alt+Tab switcher.
         Uses multiple approaches for better Linux compatibility.
         """
-        import os
-
         # Try to load custom icon (larger icons first for better dock display)
-        icon_dir = os.path.join(os.path.dirname(__file__), "data")
-        icon_256_path = os.path.join(icon_dir, "icon-256.png")
-        icon_128_path = os.path.join(icon_dir, "icon-128.png")
-        png_icon_path = os.path.join(icon_dir, "icon.png")
-        svg_icon_path = os.path.join(icon_dir, "icon.svg")
+        icon_dir = Path(__file__).parent / "data"
+        icon_256_path = icon_dir / "icon-256.png"
+        icon_128_path = icon_dir / "icon-128.png"
+        png_icon_path = icon_dir / "icon.png"
+        svg_icon_path = icon_dir / "icon.svg"
 
         icon = None
         icon_type = "none"
 
-        if os.path.exists(icon_256_path):
-            icon = QIcon(icon_256_path)
+        if icon_256_path.exists():
+            icon = QIcon(str(icon_256_path))
             icon_type = "PNG-256"
-        elif os.path.exists(icon_128_path):
-            icon = QIcon(icon_128_path)
+        elif icon_128_path.exists():
+            icon = QIcon(str(icon_128_path))
             icon_type = "PNG-128"
-        elif os.path.exists(png_icon_path):
-            icon = QIcon(png_icon_path)
+        elif png_icon_path.exists():
+            icon = QIcon(str(png_icon_path))
             icon_type = "PNG-64"
-        elif os.path.exists(svg_icon_path):
-            icon = QIcon(svg_icon_path)
+        elif svg_icon_path.exists():
+            icon = QIcon(str(svg_icon_path))
             icon_type = "SVG"
         else:
             # Fallback to theme icon

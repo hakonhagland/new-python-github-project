@@ -13,6 +13,7 @@ terminal (during startup) and in the GUI (after daemonization).
 import logging
 import tempfile
 import os
+from pathlib import Path
 from typing import List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -39,7 +40,7 @@ class BufferHandler(logging.Handler):
         super().__init__(level)
         # Check if we have an existing buffer file path (post-fork)
         existing_path = os.environ.get("LOGGING_BUFFER_FILE")
-        if existing_path and os.path.exists(existing_path):
+        if existing_path and Path(existing_path).exists():
             self.buffer_file_path = existing_path
         else:
             # Create a new temporary file (pre-fork)
@@ -72,7 +73,7 @@ class BufferHandler(logging.Handler):
         :rtype: List[str]
         """
         try:
-            if os.path.exists(self.buffer_file_path):
+            if Path(self.buffer_file_path).exists():
                 with open(self.buffer_file_path, "r") as f:
                     messages = [line.rstrip("\n") for line in f.readlines()]
                 return messages
@@ -83,8 +84,8 @@ class BufferHandler(logging.Handler):
     def clear(self) -> None:
         """Clear all buffered messages by removing the file."""
         try:
-            if os.path.exists(self.buffer_file_path):
-                os.unlink(self.buffer_file_path)
+            if Path(self.buffer_file_path).exists():
+                Path(self.buffer_file_path).unlink()
         except Exception:
             pass
 

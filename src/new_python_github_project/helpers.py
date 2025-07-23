@@ -54,7 +54,7 @@ def _detach_from_console_windows(config: Config, ctx: click.Context) -> None:
     # Prepare the command to restart the process
     # Always use pythonw.exe to avoid console window in detached process
     pythonw_exe = sys.executable.replace("python.exe", "pythonw.exe")
-    if os.path.exists(pythonw_exe):
+    if Path(pythonw_exe).exists():
         executable = pythonw_exe
         script_args = (
             ["-m", "new_python_github_project.main"] + sys.argv[1:] + ["--no-detach"]
@@ -84,12 +84,10 @@ def _detach_from_console_windows(config: Config, ctx: click.Context) -> None:
         logging.info(f"Starting detached process: {' '.join(command)}")
 
         # Create log files for the detached process
-        log_dir = os.path.join(
-            os.path.expanduser("~"), "AppData", "Local", "new-python-gh-project"
-        )
-        os.makedirs(log_dir, exist_ok=True)
-        stdout_log = os.path.join(log_dir, "detached_stdout.log")
-        stderr_log = os.path.join(log_dir, "detached_stderr.log")
+        log_dir = Path.home() / "AppData" / "Local" / "new-python-gh-project"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        stdout_log = log_dir / "detached_stdout.log"
+        stderr_log = log_dir / "detached_stderr.log"
 
         # Start the detached process with logging
         process = subprocess.Popen(
@@ -99,8 +97,8 @@ def _detach_from_console_windows(config: Config, ctx: click.Context) -> None:
             | DETACHED_PROCESS
             | CREATE_NO_WINDOW,
             startupinfo=startup_info,
-            stdout=open(stdout_log, "w"),
-            stderr=open(stderr_log, "w"),
+            stdout=open(str(stdout_log), "w"),
+            stderr=open(str(stderr_log), "w"),
             stdin=subprocess.DEVNULL,
         )
 
@@ -370,20 +368,20 @@ def _add_app_to_tray(app: QApplication, config: Config) -> None:
     """Add the application to the system tray."""
 
     # Use custom icon for tray if available, fallback to theme icon
-    icon_dir = os.path.join(os.path.dirname(__file__), "data")
-    icon_256_path = os.path.join(icon_dir, "icon-256.png")
-    icon_128_path = os.path.join(icon_dir, "icon-128.png")
-    png_icon_path = os.path.join(icon_dir, "icon.png")
-    svg_icon_path = os.path.join(icon_dir, "icon.svg")
+    icon_dir = Path(__file__).parent / "data"
+    icon_256_path = icon_dir / "icon-256.png"
+    icon_128_path = icon_dir / "icon-128.png"
+    png_icon_path = icon_dir / "icon.png"
+    svg_icon_path = icon_dir / "icon.svg"
 
-    if os.path.exists(icon_256_path):
-        tray_icon = QSystemTrayIcon(QIcon(icon_256_path), parent=app)
-    elif os.path.exists(icon_128_path):
-        tray_icon = QSystemTrayIcon(QIcon(icon_128_path), parent=app)
-    elif os.path.exists(png_icon_path):
-        tray_icon = QSystemTrayIcon(QIcon(png_icon_path), parent=app)
-    elif os.path.exists(svg_icon_path):
-        tray_icon = QSystemTrayIcon(QIcon(svg_icon_path), parent=app)
+    if icon_256_path.exists():
+        tray_icon = QSystemTrayIcon(QIcon(str(icon_256_path)), parent=app)
+    elif icon_128_path.exists():
+        tray_icon = QSystemTrayIcon(QIcon(str(icon_128_path)), parent=app)
+    elif png_icon_path.exists():
+        tray_icon = QSystemTrayIcon(QIcon(str(png_icon_path)), parent=app)
+    elif svg_icon_path.exists():
+        tray_icon = QSystemTrayIcon(QIcon(str(svg_icon_path)), parent=app)
     else:
         tray_icon = QSystemTrayIcon(QIcon.fromTheme("applications-python"), parent=app)
 
