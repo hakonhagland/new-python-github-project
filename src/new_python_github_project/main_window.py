@@ -11,7 +11,15 @@ from PyQt6.QtWidgets import (
     QMainWindow,
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QTextCursor, QAction, QGuiApplication, QIcon, QResizeEvent, QCloseEvent
+from PyQt6.QtGui import (
+    QFont,
+    QTextCursor,
+    QAction,
+    QGuiApplication,
+    QIcon,
+    QResizeEvent,
+    QCloseEvent,
+)
 from PyQt6.QtWidgets import QApplication
 from typing import cast, List, Optional
 import logging
@@ -309,7 +317,9 @@ class ActionButtonsFrame(QFrame):
             self.show_incomplete_tasks_dialog(incomplete_tasks)
         else:
             # All required tasks are completed, proceed with project creation
-            logging.info("✓ All tasks completed! Project structure creation would proceed here.")
+            logging.info(
+                "✓ All tasks completed! Project structure creation would proceed here."
+            )
             logging.info("📁 Creating project structure...")
             logging.info("📄 Generating configuration files...")
             logging.info("✅ Project setup complete!")
@@ -492,7 +502,7 @@ class MainWindow(QMainWindow):
         self.app = app
         self.config = config
         self.setup_ui()
-        
+
         # Setup post-fork logging to replay buffered messages and route future logs to GUI
         setup_post_fork_logging(self)
 
@@ -508,7 +518,7 @@ class MainWindow(QMainWindow):
         the available screen space, with a 50-pixel margin maintained.
         """
         self.setWindowTitle("Python Project Creator")
-        
+
         # Set window class for desktop integration
         self.setObjectName("Python Project Creator")
 
@@ -638,17 +648,17 @@ class MainWindow(QMainWindow):
         Uses multiple approaches for better Linux compatibility.
         """
         import os
-        
+
         # Try to load custom icon (larger icons first for better dock display)
         icon_dir = os.path.join(os.path.dirname(__file__), "data")
         icon_256_path = os.path.join(icon_dir, "icon-256.png")
         icon_128_path = os.path.join(icon_dir, "icon-128.png")
         png_icon_path = os.path.join(icon_dir, "icon.png")
         svg_icon_path = os.path.join(icon_dir, "icon.svg")
-        
+
         icon = None
         icon_type = "none"
-        
+
         if os.path.exists(icon_256_path):
             icon = QIcon(icon_256_path)
             icon_type = "PNG-256"
@@ -665,22 +675,22 @@ class MainWindow(QMainWindow):
             # Fallback to theme icon
             icon = QIcon.fromTheme("applications-python")
             icon_type = "theme"
-        
+
         if icon and not icon.isNull():
             # Set icon on this window instance
             self.setWindowIcon(icon)
-            
+
             # Additional attempts for better Linux dock integration
             try:
                 # Set icon in multiple sizes for better scaling
                 if icon_type in ["PNG", "SVG"]:
                     # Force icon refresh by setting it multiple times with different approaches
                     self.setWindowIcon(icon)
-                    
+
                     # Try setting on the application as well
-                    if hasattr(self, 'app') and self.app:
+                    if hasattr(self, "app") and self.app:
                         self.app.setWindowIcon(icon)
-                
+
                 logging.info(f"Custom {icon_type} icon loaded for window")
             except Exception as e:
                 logging.warning(f"Icon setting warning: {e}")
@@ -692,7 +702,7 @@ class MainWindow(QMainWindow):
 
         When the user closes the window with the X button, this ensures
         the application properly quits so the lockfile is cleaned up.
-        
+
         :param event: The close event
         :type event: QCloseEvent
         """

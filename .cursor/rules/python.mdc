@@ -28,7 +28,7 @@ alwaysApply: true
 def process_data(items, threshold=10):
     """
     Process items above the given threshold.
-    
+
     :param items: List of items to process
     :type items: list
     :param threshold: Minimum value to process (default: 10)
@@ -68,7 +68,7 @@ def public_function_a():
 def public_function_b():
     pass
 
-# Private functions (alphabetical)  
+# Private functions (alphabetical)
 def _private_function_a():
     pass
 
@@ -76,11 +76,11 @@ def _private_function_a():
 class MyClass:
     def __init__(self):
         pass
-    
+
     # Public methods (alphabetical)
     def public_method(self):
         pass
-    
+
     # Private methods (alphabetical)
     def _private_method(self):
         pass
@@ -89,7 +89,7 @@ class MyClass:
 ## Formatting Rules
 
 ### Strings
-- Use f-strings: `f"Value: {x}"` 
+- Use f-strings: `f"Value: {x}"`
 - Avoid old-style `%` formatting
 - Use `str.format()` only for compatibility
 

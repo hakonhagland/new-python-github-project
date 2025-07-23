@@ -20,15 +20,23 @@ class Task:
     """Represents a task with status information."""
 
     def __init__(
-        self, description: str, has_default: bool = False, is_completed: bool = False, default_value: Optional[str] = None
+        self,
+        description: str,
+        has_default: bool = False,
+        is_completed: bool = False,
+        default_value: Optional[str] = None,
     ) -> None:
         self.description = description
         self.has_default = has_default
         self.is_completed = is_completed
         self.default_value = default_value
         self.user_modified = False  # Track if user has modified the default
-        self.configured_value: Optional[str] = None  # Store the value configured by the user
-        self.configured_values: Dict[str, str] = {}  # Store multiple values for multi-parameter tasks
+        self.configured_value: Optional[str] = (
+            None  # Store the value configured by the user
+        )
+        self.configured_values: Dict[
+            str, str
+        ] = {}  # Store multiple values for multi-parameter tasks
 
     @property
     def status(self) -> str:
@@ -210,7 +218,7 @@ class TaskItemWidget(QWidget):
             """)
             self.custom_tooltip.setWindowFlags(Qt.WindowType.ToolTip)
 
-        # Position tooltip near the mouse  
+        # Position tooltip near the mouse
         pos = event.globalPos()
         self.custom_tooltip.move(pos.x() + 10, pos.y() + 10)
         self.custom_tooltip.show()
@@ -314,7 +322,9 @@ class TaskItemWidget(QWidget):
                 self.update_task_label()
                 logging.info(f"Author name configured: {author_name}")
         else:
-            logging.info(f"Task '{self.task.description}' - configuration dialog not implemented yet")
+            logging.info(
+                f"Task '{self.task.description}' - configuration dialog not implemented yet"
+            )
 
 
 class TaskConfigDialog(QDialog):
@@ -351,7 +361,9 @@ class TaskConfigDialog(QDialog):
         # Input field configuration based on task type
         if self.task.description == "Set project description":
             self.input_label = QLabel("Project description:")
-            self.input_field: Union[QTextEdit, QLineEdit] = QTextEdit()  # Multi-line for descriptions
+            self.input_field: Union[QTextEdit, QLineEdit] = (
+                QTextEdit()
+            )  # Multi-line for descriptions
             self.input_field.setPlaceholderText(
                 "Enter a brief description of your project..."
             )
