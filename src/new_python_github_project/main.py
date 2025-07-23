@@ -9,6 +9,9 @@ from new_python_github_project import runtime
 from new_python_github_project.main_window import MainWindow
 from new_python_github_project.logging_handlers import setup_pre_fork_logging
 
+# Explicitly export runtime for test access
+__all__ = ["main", "create", "edit_config", "runtime"]
+
 
 @click.group()
 @click.option("--verbose", "-v", is_flag=True, help="Show verbose output")
@@ -21,7 +24,7 @@ def main(ctx: click.Context, verbose: bool) -> None:
         logging.basicConfig(level=logging.INFO)
     else:
         logging.basicConfig(level=logging.WARNING)
-    
+
     # Setup pre-fork logging to capture all startup messages
     setup_pre_fork_logging()
 
