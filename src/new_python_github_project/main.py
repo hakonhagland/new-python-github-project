@@ -30,8 +30,9 @@ def main(ctx: click.Context, verbose: bool) -> None:
 
 
 @main.command()
+@click.option("--no-detach", is_flag=True, hidden=True, help="Do not detach from terminal (internal use)")
 @click.pass_context
-def create(ctx: click.Context) -> None:
+def create(ctx: click.Context, no_detach: bool) -> None:
     """Create a new Python project on GitHub.
 
     This will start a GUI application that helps you create a new Python project.
@@ -40,7 +41,11 @@ def create(ctx: click.Context) -> None:
     config = Config()
     helpers.check_another_instance_running(config)
     runtime.check_deps()
-    helpers.detach_from_terminal(config, ctx)
+    if not no_detach:
+        helpers.detach_from_terminal(config, ctx)
+    else:
+        # Write lockfile even when not detaching
+        config.write_lockfile()
     app = helpers.create_qapplication(config)
     # All the work is done by the MainWindow callbacks
     window = MainWindow(app, config)  # noqa: F841
