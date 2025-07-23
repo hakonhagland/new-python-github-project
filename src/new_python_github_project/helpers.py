@@ -412,20 +412,23 @@ def _load_icons(app: QApplication, config: Config) -> None:
     if platform.system() == "Linux":
         # This is required on Linux to make the app's icon appear in the application menu and dock
         QGuiApplication.setDesktopFileName(config.appname)
+
+    # Set up icon theme and load icon for all platforms
+    QIcon.setThemeName("hicolor")
+    QIcon.setFallbackThemeName("hicolor")  # fallback if theme not found
+    icons_root = _locate_hicolor_icons()
+    if icons_root is None:
+        logging.warning("Could not locate hicolor icons. Using fallback icon.")
+        icon = QIcon.fromTheme("applications-python")
     else:
-        # On other platforms, we use the hicolor theme
-        QIcon.setThemeName("hicolor")
-        QIcon.setFallbackThemeName("hicolor")  # fallback if theme not found
-        icons_root = _locate_hicolor_icons()
-        if icons_root is None:
-            logging.warning("Could not locate hicolor icons. Using fallback icon.")
+        logging.info(f"Setting icon search path to {icons_root}")
+        QIcon.setThemeSearchPaths([str(icons_root)])  # pyright: ignore
+        icon = QIcon.fromTheme(config.appname)
+        if icon.isNull():
             icon = QIcon.fromTheme("applications-python")
-        else:
-            QIcon.setThemeSearchPaths([str(icons_root)])  # pyright: ignore
-            icon = QIcon.fromTheme(config.appname)
-            if icon.isNull():
-                icon = QIcon.fromTheme("applications-python")
-        app.setWindowIcon(icon)
+
+    # Set window icon on all platforms
+    app.setWindowIcon(icon)
 
 
 def _locate_hicolor_icons() -> Path | None:

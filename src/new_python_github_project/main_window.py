@@ -16,14 +16,12 @@ from PyQt6.QtGui import (
     QTextCursor,
     QAction,
     QGuiApplication,
-    QIcon,
     QResizeEvent,
     QCloseEvent,
 )
 from PyQt6.QtWidgets import QApplication
 from typing import cast, List, Optional
 import logging
-from pathlib import Path
 
 from new_python_github_project.config import Config
 from new_python_github_project.task import Task, TaskItemWidget
@@ -579,9 +577,6 @@ class MainWindow(QMainWindow):
         # Store reference to terminal for other components
         self.terminal = self.terminal_frame.terminal
 
-        # Set window icon after terminal is created (so we can log messages)
-        self._set_window_icon()
-
         # Log the window size information
         logging.info(f"Screen size: {self.screen_width}x{self.screen_height}")
         logging.info(f"Window size: {self.window_width}x{self.window_height}")
@@ -640,61 +635,6 @@ class MainWindow(QMainWindow):
             width = event.size().width()
             height = event.size().height()
             logging.info(f"Window resized to: {width}x{height} pixels")
-
-    def _set_window_icon(self) -> None:
-        """Set the window icon for dock and taskbar display.
-
-        This method sets the window icon specifically for this MainWindow instance,
-        ensuring it appears correctly in the dock, taskbar, and Alt+Tab switcher.
-        Uses multiple approaches for better Linux compatibility.
-        """
-        # Try to load custom icon (larger icons first for better dock display)
-        icon_dir = Path(__file__).parent / "data"
-        icon_256_path = icon_dir / "icon-256.png"
-        icon_128_path = icon_dir / "icon-128.png"
-        png_icon_path = icon_dir / "icon.png"
-        svg_icon_path = icon_dir / "icon.svg"
-
-        icon = None
-        icon_type = "none"
-
-        if icon_256_path.exists():
-            icon = QIcon(str(icon_256_path))
-            icon_type = "PNG-256"
-        elif icon_128_path.exists():
-            icon = QIcon(str(icon_128_path))
-            icon_type = "PNG-128"
-        elif png_icon_path.exists():
-            icon = QIcon(str(png_icon_path))
-            icon_type = "PNG-64"
-        elif svg_icon_path.exists():
-            icon = QIcon(str(svg_icon_path))
-            icon_type = "SVG"
-        else:
-            # Fallback to theme icon
-            icon = QIcon.fromTheme("applications-python")
-            icon_type = "theme"
-
-        if icon and not icon.isNull():
-            # Set icon on this window instance
-            self.setWindowIcon(icon)
-
-            # Additional attempts for better Linux dock integration
-            try:
-                # Set icon in multiple sizes for better scaling
-                if icon_type in ["PNG", "SVG"]:
-                    # Force icon refresh by setting it multiple times with different approaches
-                    self.setWindowIcon(icon)
-
-                    # Try setting on the application as well
-                    if hasattr(self, "app") and self.app:
-                        self.app.setWindowIcon(icon)
-
-                logging.info(f"Custom {icon_type} icon loaded for window")
-            except Exception as e:
-                logging.warning(f"Icon setting warning: {e}")
-        else:
-            logging.warning("Failed to load any icon")
 
     def closeEvent(self, event: Optional[QCloseEvent]) -> None:
         """Handle window close events.
