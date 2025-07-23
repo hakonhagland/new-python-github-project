@@ -173,7 +173,7 @@ def daemonize(config: Config, verbose: bool = False) -> None:
     # Unix-specific daemonization
     # Fork the first time
     try:
-        pid = os.fork()
+        pid = os.fork()  # type: ignore[attr-defined]
         if pid > 0:
             logging.info(
                 f"Fork #1 successful. Forked child process with PID {pid}. Parent process exiting."
@@ -186,12 +186,12 @@ def daemonize(config: Config, verbose: bool = False) -> None:
 
     # Decouple from parent environment
     os.chdir("/")
-    os.setsid()
+    os.setsid()  # type: ignore[attr-defined]
     os.umask(0)
 
     # Fork a second time
     try:
-        pid = os.fork()
+        pid = os.fork()  # type: ignore[attr-defined]
         if pid > 0:
             logging.info("Fork #2 successful. Parent process exiting.")
             # Parent process exits
@@ -235,7 +235,7 @@ def detach_from_terminal(config: Config, ctx: click.Context) -> None:
         return
 
     # Unix-specific terminal detachment check
-    if os.getpgrp() == os.tcgetpgrp(sys.stdout.fileno()):
+    if os.getpgrp() == os.tcgetpgrp(sys.stdout.fileno()):  # type: ignore[attr-defined]
         verbose = ctx.obj.get("VERBOSE", False)
         daemonize(config, verbose)
     config.write_lockfile()
