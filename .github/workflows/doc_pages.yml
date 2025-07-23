@@ -18,8 +18,8 @@ jobs:
           run: curl -LsSf https://astral.sh/uv/install.sh | sh
         - name: Install python dependencies
           run: |
-            uv pip install -e .
-            uv pip install -e ".[dev]"
+            uv venv
+            uv sync
         - name: Build documentation
           run: |
             mkdir gh-pages

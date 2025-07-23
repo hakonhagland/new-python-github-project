@@ -21,6 +21,7 @@ To set up an environment for developing and submitting a pull request, you could
      * Windows: Add ``%USERPROFILE%\.cargo\bin`` to your PATH
 
 * Then, from the root directory of this repository:
+   * run ``uv venv`` to create a virtual environment
    * run ``uv pip install -e .`` to install dependencies into a virtual environment
    * run ``uv pip install -e ".[dev]"`` to install the development dependencies
    * run ``make test`` to run the test suite

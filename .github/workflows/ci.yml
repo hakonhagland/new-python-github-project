@@ -11,7 +11,9 @@ jobs:
     strategy:
         matrix:
             os: [ubuntu-latest, macos-latest, windows-latest]
-            python-version: ["3.10", "3.11"]
+            python-version: ["3.10", "3.11", "3.12", "3.13"]
+    env:
+      QT_QPA_PLATFORM: offscreen
     steps:
       - name: checkout source code
         uses: actions/checkout@v3
@@ -20,32 +22,32 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libegl1-mesa-dev libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2-dev libxi6 libxtst6
+
       - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+        uses: astral-sh/setup-uv@v4
 
       - name: Install dependencies
         run: |
-          uv pip install -e .
-          uv pip install -e ".[dev]"
+          uv venv
+          uv sync
 
-      - name: Sort imports with isort
-        run: uv run isort --check --profile black src/ tests/
-
-      - name: Format with black
-        run: uv run black --check --diff --color src/ tests/
-
-      - name: Lint with flake8
-        run: uv run flake8 src/ tests/
+      - name: Ruff check
+        run: uv run ruff check src tests
 
       - name: Check types with mypy
         run: uv run mypy src/ tests/
 
       - name: Code coverage
         run: |
-            uv run coverage run -m pytest tests
-            uv run coverage report -m
+          uv run coverage run -m pytest tests
+          uv run coverage report -m
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
