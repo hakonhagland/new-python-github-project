@@ -22,6 +22,9 @@ docs:
 mypy:
 	mypy --strict src/ tests/
 
+pre-commit:
+	pre-commit run --all-files
+
 publish-to-pypi:
 	uv build
 	twine upload dist/*
