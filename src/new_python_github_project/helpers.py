@@ -52,25 +52,19 @@ def _detach_from_console_windows(config: Config, ctx: click.Context) -> None:
     :type ctx: click.Context
     """
     # Prepare the command to restart the process
-    # We need to find the actual executable that was called
-    # Check if we can find a .exe file in the current directory that matches
-    import glob
-    possible_exes = glob.glob("*.exe")
-    app_exe = None
-    for exe in possible_exes:
-        if "new-python-gh-project" in exe:
-            app_exe = os.path.join(cwd, exe)
-            break
-    
     # Always use pythonw.exe to avoid console window in detached process
     pythonw_exe = sys.executable.replace("python.exe", "pythonw.exe")
     if os.path.exists(pythonw_exe):
         executable = pythonw_exe
-        script_args = ["-m", "new_python_github_project.main"] + sys.argv[1:] + ["--no-detach"]
+        script_args = (
+            ["-m", "new_python_github_project.main"] + sys.argv[1:] + ["--no-detach"]
+        )
     else:
         # Fallback to regular python if pythonw is not available
         executable = sys.executable
-        script_args = ["-m", "new_python_github_project.main"] + sys.argv[1:] + ["--no-detach"]
+        script_args = (
+            ["-m", "new_python_github_project.main"] + sys.argv[1:] + ["--no-detach"]
+        )
 
     # Use the same working directory
     cwd = os.getcwd()
@@ -88,13 +82,15 @@ def _detach_from_console_windows(config: Config, ctx: click.Context) -> None:
         # Log the command being executed for debugging
         command = [executable] + script_args
         logging.info(f"Starting detached process: {' '.join(command)}")
-        
+
         # Create log files for the detached process
-        log_dir = os.path.join(os.path.expanduser("~"), "AppData", "Local", "new-python-gh-project")
+        log_dir = os.path.join(
+            os.path.expanduser("~"), "AppData", "Local", "new-python-gh-project"
+        )
         os.makedirs(log_dir, exist_ok=True)
         stdout_log = os.path.join(log_dir, "detached_stdout.log")
         stderr_log = os.path.join(log_dir, "detached_stderr.log")
-        
+
         # Start the detached process with logging
         process = subprocess.Popen(
             command,
@@ -103,12 +99,14 @@ def _detach_from_console_windows(config: Config, ctx: click.Context) -> None:
             | DETACHED_PROCESS
             | CREATE_NO_WINDOW,
             startupinfo=startup_info,
-            stdout=open(stdout_log, 'w'),
-            stderr=open(stderr_log, 'w'),
+            stdout=open(stdout_log, "w"),
+            stderr=open(stderr_log, "w"),
             stdin=subprocess.DEVNULL,
         )
 
-        logging.info(f"Successfully detached from console. Process PID: {process.pid}. Original process exiting.")
+        logging.info(
+            f"Successfully detached from console. Process PID: {process.pid}. Original process exiting."
+        )
         # Exit the original process so terminal prompt returns
         sys.exit(0)
 

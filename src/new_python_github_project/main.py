@@ -30,7 +30,12 @@ def main(ctx: click.Context, verbose: bool) -> None:
 
 
 @main.command()
-@click.option("--no-detach", is_flag=True, hidden=True, help="Do not detach from terminal (internal use)")
+@click.option(
+    "--no-detach",
+    is_flag=True,
+    hidden=True,
+    help="Do not detach from terminal (internal use)",
+)
 @click.pass_context
 def create(ctx: click.Context, no_detach: bool) -> None:
     """Create a new Python project on GitHub.
