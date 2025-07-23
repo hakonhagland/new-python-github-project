@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=New Python GitHub Project
+Comment=PyQt6 desktop application that streamlines the creation of well-structured Python projects
+Exec=new-python-gh-project
+Icon=new-python-gh-project
+Type=Application
+Categories=Utility;
+StartupWMClass=new-python-gh-project

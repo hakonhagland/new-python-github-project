@@ -17,7 +17,7 @@ from new_python_github_project.constants import Directories, FileNames
 class Config:
     # NOTE: These are made class variables since they must be accessible from
     #   pytest before creating an object of this class
-    appname = "new-python-github-project"
+    appname = "new-python-gh-project"
     config_fn = "config.ini"
     dirlock_fn = ".dirlock"
     lockfile_fn = "app.lock"

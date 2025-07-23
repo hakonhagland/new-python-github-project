@@ -12,31 +12,33 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QEvent
 from PyQt6.QtGui import QFont
+import logging
+from typing import Any, Optional, Dict, Union
 
 
 class Task:
     """Represents a task with status information."""
 
     def __init__(
-        self, description, has_default=False, is_completed=False, default_value=None
-    ):
+        self, description: str, has_default: bool = False, is_completed: bool = False, default_value: Optional[str] = None
+    ) -> None:
         self.description = description
         self.has_default = has_default
         self.is_completed = is_completed
         self.default_value = default_value
         self.user_modified = False  # Track if user has modified the default
-        self.configured_value = None  # Store the value configured by the user
-        self.configured_values = {}  # Store multiple values for multi-parameter tasks
+        self.configured_value: Optional[str] = None  # Store the value configured by the user
+        self.configured_values: Dict[str, str] = {}  # Store multiple values for multi-parameter tasks
 
     @property
-    def status(self):
+    def status(self) -> str:
         """Returns the status of the task."""
         if self.is_completed or self.has_default:
             return "completed"  # Green checkmark
         else:
             return "pending"  # Red question mark
 
-    def get_tooltip_text(self):
+    def get_tooltip_text(self) -> str:
         """Returns the appropriate tooltip text based on task state."""
         if self.status == "pending":
             return "User input required"
@@ -45,7 +47,7 @@ class Task:
         else:
             return "Use default"
 
-    def _truncate_path(self, value):
+    def _truncate_path(self, value: str) -> str:
         """Helper method to truncate long paths for display."""
         if len(value) > 50:
             # Smart truncation: find the nearest path separator after position 50
@@ -68,7 +70,7 @@ class Task:
         else:
             return value
 
-    def get_display_text(self):
+    def get_display_text(self) -> str:
         """Returns the display text for the task with current state hints."""
         base_text = self.description
 
@@ -98,12 +100,12 @@ class Task:
 class TaskItemWidget(QWidget):
     """Widget containing a task with status icon and clickable label."""
 
-    def __init__(self, task, parent=None):
+    def __init__(self, task: Task, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.task = task
         self.setup_ui()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """Setup the task item widget."""
         layout = QHBoxLayout(self)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -141,7 +143,7 @@ class TaskItemWidget(QWidget):
             }
         """)
 
-    def update_status_icon(self):
+    def update_status_icon(self) -> None:
         """Update the status icon based on task status."""
         if self.task.status == "completed":
             # Green checkmark (using text for now, could use actual icon)
@@ -158,31 +160,31 @@ class TaskItemWidget(QWidget):
 
         # Remove default tooltip and implement custom tooltip
         self.status_label.setToolTip("")
-        self.custom_tooltip = None
+        self.custom_tooltip: Optional[QLabel] = None
 
         # Install event filter for custom tooltip
         self.status_label.installEventFilter(self)
 
-    def mark_as_completed(self):
+    def mark_as_completed(self) -> None:
         """Mark the task as completed by user modification."""
         self.task.is_completed = True
         self.task.user_modified = True
         self.update_status_icon()
         self.update_task_label()
 
-    def update_task_label(self):
+    def update_task_label(self) -> None:
         """Update the task label text to reflect current state."""
         self.task_label.setText(self.task.get_display_text())
 
-    def mark_as_using_default(self):
+    def mark_as_using_default(self) -> None:
         """Mark the task as using default value."""
         self.task.is_completed = True
         self.task.user_modified = False
         self.update_status_icon()
 
-    def eventFilter(self, obj, event):
+    def eventFilter(self, obj: Any, event: Optional[QEvent]) -> bool:
         """Handle custom tooltip events."""
-        if obj == self.status_label:
+        if obj == self.status_label and event is not None:
             if event.type() == QEvent.Type.Enter:
                 self.show_custom_tooltip(event)
                 return True
@@ -191,7 +193,7 @@ class TaskItemWidget(QWidget):
                 return True
         return super().eventFilter(obj, event)
 
-    def show_custom_tooltip(self, event):
+    def show_custom_tooltip(self, event: Any) -> None:
         """Show custom tooltip with consistent styling."""
         if self.custom_tooltip is None:
             self.custom_tooltip = QLabel(self.task.get_tooltip_text())
@@ -208,31 +210,30 @@ class TaskItemWidget(QWidget):
             """)
             self.custom_tooltip.setWindowFlags(Qt.WindowType.ToolTip)
 
-        # Position tooltip near the mouse
-        pos = event.globalPosition().toPoint()
+        # Position tooltip near the mouse  
+        pos = event.globalPos()
         self.custom_tooltip.move(pos.x() + 10, pos.y() + 10)
         self.custom_tooltip.show()
 
-    def hide_custom_tooltip(self):
+    def hide_custom_tooltip(self) -> None:
         """Hide custom tooltip."""
         if self.custom_tooltip:
             self.custom_tooltip.hide()
             self.custom_tooltip = None
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: Any) -> None:
         """Handle mouse press events."""
         if event.button() == Qt.MouseButton.LeftButton:
             self.on_task_clicked()
         super().mousePressEvent(event)
 
-    def on_task_clicked(self):
+    def on_task_clicked(self) -> None:
         """Handle task click."""
         # Add log message to terminal
-        main_window = self.window()  # Get the main window
-        if hasattr(main_window, "add_log_message"):
-            main_window.add_log_message(f"Task selected: {self.task.description}")
+        logging.info(f"Task selected: {self.task.description}")
 
         # Open task configuration dialog
+        dialog: Union[TaskConfigDialog, LicenseSelectionDialog, PythonVersionDialog]
         if self.task.description == "Set project name":
             dialog = TaskConfigDialog(self.task, self)
             if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -243,11 +244,7 @@ class TaskItemWidget(QWidget):
                 self.task.configured_value = project_name
                 # Update the label to show the new value
                 self.update_task_label()
-                main_window = self.window()  # Get the main window
-                if hasattr(main_window, "add_log_message"):
-                    main_window.add_log_message(
-                        f"Project name configured: {project_name}"
-                    )
+                logging.info(f"Project name configured: {project_name}")
         elif self.task.description == "Set project directory":
             # Open directory selection dialog
             directory = QFileDialog.getExistingDirectory(
@@ -264,16 +261,10 @@ class TaskItemWidget(QWidget):
                 self.task.configured_value = directory
                 # Update the label to show the new value
                 self.update_task_label()
-                main_window = self.window()  # Get the main window
-                if hasattr(main_window, "add_log_message"):
-                    main_window.add_log_message(
-                        f"Project directory set to: {directory}"
-                    )
+                logging.info(f"Project directory set to: {directory}")
             else:
                 # User cancelled the dialog
-                main_window = self.window()  # Get the main window
-                if hasattr(main_window, "add_log_message"):
-                    main_window.add_log_message("Directory selection cancelled")
+                logging.info("Directory selection cancelled")
         elif self.task.description == "Choose license":
             # Open license selection dialog
             dialog = LicenseSelectionDialog(self.task, self)
@@ -285,9 +276,7 @@ class TaskItemWidget(QWidget):
                 self.task.configured_value = selected_license
                 # Update the label to show the new value
                 self.update_task_label()
-                main_window = self.window()  # Get the main window
-                if hasattr(main_window, "add_log_message"):
-                    main_window.add_log_message(f"License selected: {selected_license}")
+                logging.info(f"License selected: {selected_license}")
         elif self.task.description == "Choose Python version":
             # Open Python version selection dialog
             dialog = PythonVersionDialog(self.task, self)
@@ -299,11 +288,7 @@ class TaskItemWidget(QWidget):
                 self.task.configured_value = selected_version
                 # Update the label to show the new value
                 self.update_task_label()
-                main_window = self.window()  # Get the main window
-                if hasattr(main_window, "add_log_message"):
-                    main_window.add_log_message(
-                        f"Python version configured: {selected_version}"
-                    )
+                logging.info(f"Python version configured: {selected_version}")
         elif self.task.description == "Set project description":
             # Open project description configuration dialog
             dialog = TaskConfigDialog(self.task, self)
@@ -315,11 +300,7 @@ class TaskItemWidget(QWidget):
                 self.task.configured_value = project_description
                 # Update the label to show the new value
                 self.update_task_label()
-                main_window = self.window()  # Get the main window
-                if hasattr(main_window, "add_log_message"):
-                    main_window.add_log_message(
-                        f"Project description configured: {project_description}"
-                    )
+                logging.info(f"Project description configured: {project_description}")
         elif self.task.description == "Set author name":
             # Open author name configuration dialog
             dialog = TaskConfigDialog(self.task, self)
@@ -331,29 +312,21 @@ class TaskItemWidget(QWidget):
                 self.task.configured_value = author_name
                 # Update the label to show the new value
                 self.update_task_label()
-                main_window = self.window()  # Get the main window
-                if hasattr(main_window, "add_log_message"):
-                    main_window.add_log_message(
-                        f"Author name configured: {author_name}"
-                    )
+                logging.info(f"Author name configured: {author_name}")
         else:
-            main_window = self.window()  # Get the main window
-            if hasattr(main_window, "add_log_message"):
-                main_window.add_log_message(
-                    f"Task '{self.task.description}' - configuration dialog not implemented yet"
-                )
+            logging.info(f"Task '{self.task.description}' - configuration dialog not implemented yet")
 
 
 class TaskConfigDialog(QDialog):
     """Dialog for configuring task parameters."""
 
-    def __init__(self, task, parent=None):
+    def __init__(self, task: Task, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.task = task
-        self.result_value = None
+        self.result_value: Optional[str] = None
         self.setup_ui()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """Setup the dialog UI."""
         self.setWindowTitle(f"Configure: {self.task.description}")
         self.setModal(True)
@@ -361,7 +334,7 @@ class TaskConfigDialog(QDialog):
         # Determine dialog size and input type based on task
         if self.task.description == "Set project description":
             self.setFixedSize(500, 300)  # Larger for descriptions
-            self.use_text_edit = True
+            self.use_text_edit: bool = True
         else:
             self.setFixedSize(400, 200)  # Standard size for names
             self.use_text_edit = False
@@ -378,14 +351,14 @@ class TaskConfigDialog(QDialog):
         # Input field configuration based on task type
         if self.task.description == "Set project description":
             self.input_label = QLabel("Project description:")
-            self.input_field = QTextEdit()  # Multi-line for descriptions
+            self.input_field: Union[QTextEdit, QLineEdit] = QTextEdit()  # Multi-line for descriptions
             self.input_field.setPlaceholderText(
                 "Enter a brief description of your project..."
             )
             self.input_field.setMaximumHeight(100)
 
             # Add character count label
-            self.char_count_label = QLabel("0 characters")
+            self.char_count_label: QLabel = QLabel("0 characters")
             self.char_count_label.setStyleSheet("color: #666; font-size: 11px;")
             layout.addWidget(self.input_label)
             layout.addWidget(self.input_field)
@@ -413,8 +386,10 @@ class TaskConfigDialog(QDialog):
         # Pre-fill with existing value if available
         if hasattr(self.task, "configured_value") and self.task.configured_value:
             if self.use_text_edit:
+                assert isinstance(self.input_field, QTextEdit)
                 self.input_field.setPlainText(self.task.configured_value)
             else:
+                assert isinstance(self.input_field, QLineEdit)
                 self.input_field.setText(self.task.configured_value)
                 # Select all text for easy replacement
                 self.input_field.selectAll()
@@ -436,24 +411,27 @@ class TaskConfigDialog(QDialog):
         else:
             self.input_field.textChanged.connect(self.clear_error_styling)
 
-    def update_char_count(self):
+    def update_char_count(self) -> None:
         """Update character count for description input."""
         if hasattr(self, "char_count_label"):
+            assert isinstance(self.input_field, QTextEdit)
             count = len(self.input_field.toPlainText())
             self.char_count_label.setText(f"{count} characters")
 
-    def clear_error_styling(self):
+    def clear_error_styling(self) -> None:
         """Clear error styling when user starts typing."""
         if self.use_text_edit:
             self.input_field.setStyleSheet("")
         else:
             self.input_field.setStyleSheet("")
 
-    def accept(self):
+    def accept(self) -> None:
         """Handle OK button click."""
         if self.use_text_edit:
+            assert isinstance(self.input_field, QTextEdit)
             value = self.input_field.toPlainText().strip()
         else:
+            assert isinstance(self.input_field, QLineEdit)
             value = self.input_field.text().strip()
 
         if value:
@@ -468,7 +446,7 @@ class TaskConfigDialog(QDialog):
             else:
                 self.input_field.setStyleSheet("border: 1px solid red;")
 
-    def get_result(self):
+    def get_result(self) -> Optional[str]:
         """Return the configured value."""
         return self.result_value
 
@@ -476,13 +454,13 @@ class TaskConfigDialog(QDialog):
 class LicenseSelectionDialog(QDialog):
     """Dialog for selecting a license."""
 
-    def __init__(self, task, parent=None):
+    def __init__(self, task: Task, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.task = task
-        self.result_value = None
+        self.result_value: Optional[str] = None
         self.setup_ui()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """Setup the dialog UI."""
         self.setWindowTitle("Choose License")
         self.setModal(True)
@@ -498,9 +476,9 @@ class LicenseSelectionDialog(QDialog):
         layout.addWidget(title)
 
         # Description
-        description = QLabel("Select a license for your project:")
-        description.setStyleSheet("color: #666; margin-bottom: 10px;")
-        layout.addWidget(description)
+        description_label = QLabel("Select a license for your project:")
+        description_label.setStyleSheet("color: #666; margin-bottom: 10px;")
+        layout.addWidget(description_label)
 
         # License options
         self.license_combo = QComboBox()
@@ -531,7 +509,7 @@ class LicenseSelectionDialog(QDialog):
         layout.addWidget(self.license_combo)
 
         # License description area
-        self.description_label = QLabel()
+        self.description_label: QLabel = QLabel()
         self.description_label.setWordWrap(True)
         self.description_label.setStyleSheet("""
             QLabel {
@@ -559,7 +537,7 @@ class LicenseSelectionDialog(QDialog):
         # Set focus to combo box
         self.license_combo.setFocus()
 
-    def update_description(self):
+    def update_description(self) -> None:
         """Update the license description based on selection."""
         current_text = self.license_combo.currentText()
         license_name = current_text.split(" - ")[0]
@@ -578,7 +556,7 @@ class LicenseSelectionDialog(QDialog):
             descriptions.get(license_name, "No description available.")
         )
 
-    def accept(self):
+    def accept(self) -> None:
         """Handle OK button click."""
         current_text = self.license_combo.currentText()
         license_name = current_text.split(" - ")[0]
@@ -591,7 +569,7 @@ class LicenseSelectionDialog(QDialog):
 
         super().accept()
 
-    def get_result(self):
+    def get_result(self) -> Optional[str]:
         """Return the selected license."""
         return self.result_value
 
@@ -599,13 +577,13 @@ class LicenseSelectionDialog(QDialog):
 class PythonVersionDialog(QDialog):
     """Dialog for selecting Python version requirements."""
 
-    def __init__(self, task, parent=None):
+    def __init__(self, task: Task, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.task = task
-        self.result_value = None
+        self.result_value: Optional[str] = None
         self.setup_ui()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """Setup the dialog UI."""
         self.setWindowTitle("Choose Python Version")
         self.setModal(True)
@@ -621,11 +599,11 @@ class PythonVersionDialog(QDialog):
         layout.addWidget(title)
 
         # Description
-        description = QLabel(
+        description_label = QLabel(
             "Select the minimum Python version required for your project:"
         )
-        description.setStyleSheet("color: #666; margin-bottom: 10px;")
-        layout.addWidget(description)
+        description_label.setStyleSheet("color: #666; margin-bottom: 10px;")
+        layout.addWidget(description_label)
 
         # Current Python version info
         import sys
@@ -678,7 +656,7 @@ class PythonVersionDialog(QDialog):
         layout.addWidget(self.custom_input)
 
         # Version description area
-        self.description_label = QLabel()
+        self.description_label: QLabel = QLabel()
         self.description_label.setWordWrap(True)
         self.description_label.setStyleSheet("""
             QLabel {
@@ -706,7 +684,7 @@ class PythonVersionDialog(QDialog):
         # Set initial description
         self.update_description()
 
-    def update_description(self):
+    def update_description(self) -> None:
         """Update the description based on selected version."""
         selected_text = self.version_combo.currentText()
         version = (
@@ -728,7 +706,7 @@ class PythonVersionDialog(QDialog):
         )
         self.description_label.setText(description)
 
-    def on_custom_input_changed(self):
+    def on_custom_input_changed(self) -> None:
         """Handle custom input changes."""
         if self.custom_input.text().strip():
             # If custom input is provided, update description
@@ -738,7 +716,7 @@ class PythonVersionDialog(QDialog):
             # If custom input is empty, show description for combo selection
             self.update_description()
 
-    def accept(self):
+    def accept(self) -> None:
         """Handle OK button click."""
         # Check if custom input is provided
         custom_text = self.custom_input.text().strip()
@@ -760,7 +738,7 @@ class PythonVersionDialog(QDialog):
         self.task.configured_value = self.result_value
         super().accept()
 
-    def get_result(self):
+    def get_result(self) -> Optional[str]:
         """Return the configured value."""
         return self.result_value
 
@@ -768,12 +746,12 @@ class PythonVersionDialog(QDialog):
 class ClickableLabel(QLabel):
     """Clickable QLabel for task items with proper text alignment."""
 
-    def __init__(self, task_description, parent=None):
+    def __init__(self, task_description: str, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.task_description = task_description
         self.setup_ui()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """Setup the clickable label appearance and behavior."""
         # Set text with word wrapping and enable rich text
         self.setText(self.task_description)
@@ -805,13 +783,13 @@ class ClickableLabel(QLabel):
         # Enable mouse tracking for hover effects
         self.setMouseTracking(True)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: Any) -> None:
         """Handle mouse press events."""
         if event.button() == Qt.MouseButton.LeftButton:
             self.on_task_clicked()
         super().mousePressEvent(event)
 
-    def on_task_clicked(self):
+    def on_task_clicked(self) -> None:
         """Handle task click."""
         # This method is not used anymore since we handle clicks in TaskItemWidget
         pass

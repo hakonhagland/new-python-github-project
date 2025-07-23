@@ -109,3 +109,8 @@ Follow the Python style guide in `.cursor/rules/python.mdc`:
 - Use `ruff` for formatting/linting and `mypy` for type checking
 - Import order: standard library → third-party → local (alphabetically sorted)
 - Functions/methods organized alphabetically within their scope
+
+## Mypy
+
+- Always verify that added coded has sufficient type annotations by running
+ `make mypy` (`mypy --strict src/ tests/`)

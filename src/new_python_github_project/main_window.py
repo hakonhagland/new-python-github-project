@@ -11,12 +11,14 @@ from PyQt6.QtWidgets import (
     QMainWindow,
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QTextCursor, QAction, QGuiApplication
+from PyQt6.QtGui import QFont, QTextCursor, QAction, QGuiApplication, QIcon, QResizeEvent, QCloseEvent
 from PyQt6.QtWidgets import QApplication
-from typing import cast
+from typing import cast, List, Optional
+import logging
 
 from new_python_github_project.config import Config
 from new_python_github_project.task import Task, TaskItemWidget
+from new_python_github_project.logging_handlers import setup_post_fork_logging
 
 
 class TaskListFrame(QFrame):
@@ -32,7 +34,7 @@ class TaskListFrame(QFrame):
     .. versionadded:: 1.0.0
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize the TaskListFrame.
 
         Sets up the UI and loads sample tasks for the project creation workflow.
@@ -44,7 +46,7 @@ class TaskListFrame(QFrame):
         self.setup_ui()
         self.load_sample_tasks()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """Setup the task list frame UI components.
 
         Creates the main layout, title label, scroll area, and container widget
@@ -82,7 +84,7 @@ class TaskListFrame(QFrame):
         # Style the frame
         self.setFrameStyle(QFrame.Shape.Box)
 
-    def load_sample_tasks(self):
+    def load_sample_tasks(self) -> None:
         """Load sample tasks for the project creation workflow.
 
         Creates and loads tasks organized in logical sections that follow the natural
@@ -188,7 +190,7 @@ class TaskListFrame(QFrame):
         # Store reference to all tasks for validation
         self.all_tasks = sample_tasks
 
-    def get_incomplete_required_tasks(self):
+    def get_incomplete_required_tasks(self) -> List[Task]:
         """Get list of tasks that require user input but are not completed.
 
         Iterates through all tasks to find those that have no default value
@@ -222,7 +224,7 @@ class ActionButtonsFrame(QFrame):
     .. versionadded:: 1.0.0
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize the ActionButtonsFrame.
 
         Sets up the UI with action buttons.
@@ -233,7 +235,7 @@ class ActionButtonsFrame(QFrame):
         super().__init__(parent)
         self.setup_ui()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """Setup the action buttons frame UI components.
 
         Creates the layout, title label, and action buttons. Currently includes
@@ -282,7 +284,7 @@ class ActionButtonsFrame(QFrame):
         # Style the frame
         self.setFrameStyle(QFrame.Shape.Box)
 
-    def on_create_clicked(self):
+    def on_create_clicked(self) -> None:
         """Handle create button click event.
 
         Validates that all required tasks are completed before proceeding with
@@ -307,15 +309,12 @@ class ActionButtonsFrame(QFrame):
             self.show_incomplete_tasks_dialog(incomplete_tasks)
         else:
             # All required tasks are completed, proceed with project creation
-            if hasattr(main_window, "add_log_message"):
-                main_window.add_log_message(
-                    "✓ All tasks completed! Project structure creation would proceed here."
-                )
-                main_window.add_log_message("📁 Creating project structure...")
-                main_window.add_log_message("📄 Generating configuration files...")
-                main_window.add_log_message("✅ Project setup complete!")
+            logging.info("✓ All tasks completed! Project structure creation would proceed here.")
+            logging.info("📁 Creating project structure...")
+            logging.info("📄 Generating configuration files...")
+            logging.info("✅ Project setup complete!")
 
-    def show_incomplete_tasks_dialog(self, incomplete_tasks):
+    def show_incomplete_tasks_dialog(self, incomplete_tasks: List[Task]) -> None:
         """Show error dialog listing incomplete required tasks.
 
         Displays a critical message box with a list of tasks that require
@@ -356,7 +355,7 @@ class TerminalFrame(QFrame):
     .. versionadded:: 1.0.0
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize the TerminalFrame.
 
         Sets up the UI and loads sample output messages.
@@ -368,7 +367,7 @@ class TerminalFrame(QFrame):
         self.setup_ui()
         self.load_sample_output()
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """Setup the terminal frame UI components.
 
         Creates the layout, title label, and terminal text area. The terminal
@@ -407,7 +406,7 @@ class TerminalFrame(QFrame):
         # Style the frame
         self.setFrameStyle(QFrame.Shape.Box)
 
-    def load_sample_output(self):
+    def load_sample_output(self) -> None:
         """Load sample terminal output messages.
 
         Populates the terminal with sample log messages to demonstrate
@@ -428,9 +427,9 @@ class TerminalFrame(QFrame):
         ]
 
         for message in sample_messages:
-            self.add_log_message(message)
+            logging.info(message)
 
-    def add_log_message(self, message):
+    def add_log_message(self, message: str) -> None:
         """Add a log message to the terminal output.
 
         Appends a timestamped message to the terminal and automatically
@@ -493,8 +492,11 @@ class MainWindow(QMainWindow):
         self.app = app
         self.config = config
         self.setup_ui()
+        
+        # Setup post-fork logging to replay buffered messages and route future logs to GUI
+        setup_post_fork_logging(self)
 
-    def setup_ui(self):
+    def setup_ui(self) -> None:
         """Setup the main window UI components.
 
         Creates the main window layout with three vertical areas, configures
@@ -505,7 +507,10 @@ class MainWindow(QMainWindow):
         The window size is automatically adjusted if the default size exceeds
         the available screen space, with a 50-pixel margin maintained.
         """
-        self.setWindowTitle("PyQt6 UI Testing - Three Area Layout")
+        self.setWindowTitle("Python Project Creator")
+        
+        # Set window class for desktop integration
+        self.setObjectName("Python Project Creator")
 
         # Set default window size
         default_width = 1250
@@ -563,13 +568,16 @@ class MainWindow(QMainWindow):
         # Store reference to terminal for other components
         self.terminal = self.terminal_frame.terminal
 
-        # Log the window size information
-        self.add_log_message(f"Screen size: {self.screen_width}x{self.screen_height}")
-        self.add_log_message(f"Window size: {self.window_width}x{self.window_height}")
-        if self.window_width < default_width or self.window_height < default_height:
-            self.add_log_message("Window size adjusted to fit screen")
+        # Set window icon after terminal is created (so we can log messages)
+        self._set_window_icon()
 
-    def setup_menu(self):
+        # Log the window size information
+        logging.info(f"Screen size: {self.screen_width}x{self.screen_height}")
+        logging.info(f"Window size: {self.window_width}x{self.window_height}")
+        if self.window_width < default_width or self.window_height < default_height:
+            logging.info("Window size adjusted to fit screen")
+
+    def setup_menu(self) -> None:
         """Setup the menu bar with file operations.
 
         Creates a File menu with a Quit action (Ctrl+Q shortcut).
@@ -587,7 +595,7 @@ class MainWindow(QMainWindow):
                 quit_action.triggered.connect(self.close)
                 file_menu.addAction(quit_action)
 
-    def add_log_message(self, message):
+    def add_log_message(self, message: str) -> None:
         """Add a log message to the terminal output.
 
         Convenience method that forwards log messages to the terminal frame.
@@ -602,7 +610,7 @@ class MainWindow(QMainWindow):
         """
         self.terminal_frame.add_log_message(message)
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Handle window resize events.
 
         Logs the new window dimensions to the terminal when the user
@@ -617,6 +625,78 @@ class MainWindow(QMainWindow):
            and calls the parent implementation before logging.
         """
         super().resizeEvent(event)
-        width = event.size().width()
-        height = event.size().height()
-        self.add_log_message(f"Window resized to: {width}x{height} pixels")
+        if event is not None:
+            width = event.size().width()
+            height = event.size().height()
+            logging.info(f"Window resized to: {width}x{height} pixels")
+
+    def _set_window_icon(self) -> None:
+        """Set the window icon for dock and taskbar display.
+
+        This method sets the window icon specifically for this MainWindow instance,
+        ensuring it appears correctly in the dock, taskbar, and Alt+Tab switcher.
+        Uses multiple approaches for better Linux compatibility.
+        """
+        import os
+        
+        # Try to load custom icon (larger icons first for better dock display)
+        icon_dir = os.path.join(os.path.dirname(__file__), "data")
+        icon_256_path = os.path.join(icon_dir, "icon-256.png")
+        icon_128_path = os.path.join(icon_dir, "icon-128.png")
+        png_icon_path = os.path.join(icon_dir, "icon.png")
+        svg_icon_path = os.path.join(icon_dir, "icon.svg")
+        
+        icon = None
+        icon_type = "none"
+        
+        if os.path.exists(icon_256_path):
+            icon = QIcon(icon_256_path)
+            icon_type = "PNG-256"
+        elif os.path.exists(icon_128_path):
+            icon = QIcon(icon_128_path)
+            icon_type = "PNG-128"
+        elif os.path.exists(png_icon_path):
+            icon = QIcon(png_icon_path)
+            icon_type = "PNG-64"
+        elif os.path.exists(svg_icon_path):
+            icon = QIcon(svg_icon_path)
+            icon_type = "SVG"
+        else:
+            # Fallback to theme icon
+            icon = QIcon.fromTheme("applications-python")
+            icon_type = "theme"
+        
+        if icon and not icon.isNull():
+            # Set icon on this window instance
+            self.setWindowIcon(icon)
+            
+            # Additional attempts for better Linux dock integration
+            try:
+                # Set icon in multiple sizes for better scaling
+                if icon_type in ["PNG", "SVG"]:
+                    # Force icon refresh by setting it multiple times with different approaches
+                    self.setWindowIcon(icon)
+                    
+                    # Try setting on the application as well
+                    if hasattr(self, 'app') and self.app:
+                        self.app.setWindowIcon(icon)
+                
+                logging.info(f"Custom {icon_type} icon loaded for window")
+            except Exception as e:
+                logging.warning(f"Icon setting warning: {e}")
+        else:
+            logging.warning("Failed to load any icon")
+
+    def closeEvent(self, event: Optional[QCloseEvent]) -> None:
+        """Handle window close events.
+
+        When the user closes the window with the X button, this ensures
+        the application properly quits so the lockfile is cleaned up.
+        
+        :param event: The close event
+        :type event: QCloseEvent
+        """
+        logging.info("Window close requested")
+        if event is not None:
+            event.accept()
+        self.app.quit()

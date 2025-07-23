@@ -1,0 +1,26 @@
+[Icon Theme]
+Name=pyqt-demo
+Comment=Fallback icons for the PyQt demo
+Inherits=hicolor
+Directories=48x48/apps,256x256/apps,22x22/status,22x22@2/status
+
+[48x48/apps]
+Size=48
+Type=Fixed
+Context=Applications
+
+[256x256/apps]
+Size=256
+Type=Fixed
+Context=Applications
+
+[22x22/status]
+Size=22
+Type=Fixed
+Context=Status
+
+[22x22@2/status]
+Size=22
+Scale=2
+Type=Fixed
+Context=Status

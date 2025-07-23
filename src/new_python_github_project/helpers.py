@@ -1,13 +1,16 @@
-import os
-import sys
-import platform
-import subprocess
-import logging
+import importlib.resources as resources
 import json
+import logging
+import os
+from pathlib import Path
+import platform
+import sys
+import sysconfig
+import subprocess
 
 import click
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QApplication
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QGuiApplication
 
 from new_python_github_project.config import Config
 from new_python_github_project.exceptions import ConfigException
@@ -50,7 +53,19 @@ def create_qapplication(config: Config) -> QApplication:
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     app.setQuitOnLastWindowClosed(False)
-    _add_app_to_tray(app, config)
+    _load_icons(app, config)
+
+    # Set application display name
+    app.setApplicationDisplayName("New Python GitHub Project")
+    app.setApplicationName("New Python GitHub Project")
+    
+    # Set application metadata for better desktop integration
+    app.setOrganizationName("hakonhagland")
+    app.setOrganizationDomain("github.com")
+    app.setApplicationVersion("1.0.0")
+
+    # TODO: The app does not need a tray icon yet, but it is possible to add it back later
+    #  _add_app_to_tray(app, config)
     app.aboutToQuit.connect(config.remove_lockfile)
     return app
 
@@ -163,7 +178,7 @@ def edit_config_file(config: Config) -> None:
 
 
 def debug_to_file(
-    message: str, data: dict | None = None, debug_file: str = "/tmp/pyqt_debug.log"
+    message: str, data: dict[str, str] | None = None, debug_file: str = "/tmp/pyqt_debug.log"
 ) -> None:
     """Write debug information to a file for daemon debugging.
 
@@ -230,7 +245,24 @@ def setup_remote_debugging(host: str = "localhost", port: int = 5678) -> None:
 def _add_app_to_tray(app: QApplication, config: Config) -> None:
     """Add the application to the system tray."""
 
-    tray_icon = QSystemTrayIcon(QIcon.fromTheme("applications-python"), parent=app)
+    # Use custom icon for tray if available, fallback to theme icon
+    icon_dir = os.path.join(os.path.dirname(__file__), "data")
+    icon_256_path = os.path.join(icon_dir, "icon-256.png")
+    icon_128_path = os.path.join(icon_dir, "icon-128.png")
+    png_icon_path = os.path.join(icon_dir, "icon.png")
+    svg_icon_path = os.path.join(icon_dir, "icon.svg")
+    
+    if os.path.exists(icon_256_path):
+        tray_icon = QSystemTrayIcon(QIcon(icon_256_path), parent=app)
+    elif os.path.exists(icon_128_path):
+        tray_icon = QSystemTrayIcon(QIcon(icon_128_path), parent=app)
+    elif os.path.exists(png_icon_path):
+        tray_icon = QSystemTrayIcon(QIcon(png_icon_path), parent=app)
+    elif os.path.exists(svg_icon_path):
+        tray_icon = QSystemTrayIcon(QIcon(svg_icon_path), parent=app)
+    else:
+        tray_icon = QSystemTrayIcon(QIcon.fromTheme("applications-python"), parent=app)
+    
     tray_menu = QMenu()
     show_action = tray_menu.addAction("Show")
     quit_action = tray_menu.addAction("Quit")
@@ -238,20 +270,48 @@ def _add_app_to_tray(app: QApplication, config: Config) -> None:
     tray_icon.setToolTip("Python Project Creator")
     tray_icon.show()
 
-    def on_quit():
+    def on_quit() -> None:
         config.remove_lockfile()
         app.quit()
 
     if quit_action is not None:
         quit_action.triggered.connect(on_quit)
 
-    def on_show():
+    def on_show() -> None:
         # Placeholder: bring main window to front if implemented
         pass
 
     if show_action is not None:
         show_action.triggered.connect(on_show)
 
+def _load_icons(app: QApplication, config: Config) -> None:
+    """Load icons for the application."""
+    if platform.system() == "Linux":
+        # This is required on Linux to make the app's icon appear in the application menu and dock
+        QGuiApplication.setDesktopFileName(config.appname)
+    else:
+        # On other platforms, we use the hicolor theme
+        QIcon.setThemeName("hicolor")
+        QIcon.setFallbackThemeName("hicolor")  # fallback if theme not found
+        icons_root = _locate_hicolor_icons()
+        if icons_root is None:
+            logging.warning("Could not locate hicolor icons. Using fallback icon.")
+            icon = QIcon.fromTheme("applications-python")
+        else:
+            QIcon.setThemeSearchPaths([str(icons_root)])  # pyright: ignore
+            icon = QIcon.fromTheme(config.appname)
+            if icon.isNull():
+                icon = QIcon.fromTheme("applications-python")
+        app.setWindowIcon(icon)
+
+def _locate_hicolor_icons() -> Path | None:
+    # Where pip placed the shared‑data files
+    data_root = Path(sysconfig.get_paths()["data"]) / "share" / "icons" / "hicolor"
+    if data_root.is_dir():
+        return data_root
+    # NOTE: If the user did not install the application with "pip install --user", the icons
+    #  will not be correctly installed in $XDG_DATA_DIRS/icons/hicolor on Linux.
+    return None
 
 def _setup_daemon_logging(log_path: str, verbose: bool = False) -> None:
     """Setup logging for the daemon process after forking.

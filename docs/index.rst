@@ -6,6 +6,8 @@ Welcome to ``new-python-github-project``'s documentation!
     :caption: Contents:
 
     introduction
+    installation
+    usage
     Development <development>
     Debugging <debugging>
     Source code <source>

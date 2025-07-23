@@ -7,6 +7,7 @@ from new_python_github_project.config import Config
 from new_python_github_project import helpers
 from new_python_github_project import runtime
 from new_python_github_project.main_window import MainWindow
+from new_python_github_project.logging_handlers import setup_pre_fork_logging
 
 
 @click.group()
@@ -20,6 +21,9 @@ def main(ctx: click.Context, verbose: bool) -> None:
         logging.basicConfig(level=logging.INFO)
     else:
         logging.basicConfig(level=logging.WARNING)
+    
+    # Setup pre-fork logging to capture all startup messages
+    setup_pre_fork_logging()
 
 
 @main.command()

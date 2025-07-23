@@ -46,5 +46,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/new_python_github_project"]
 
+[tool.hatch.build.targets.wheel.shared-data]
+"icons/hicolor" = "share/icons/hicolor"
+"resources/linux/new-python-github-project.desktop" = "share/applications/new-python-github-project.desktop"
+
 [tool.coverage.report]
 fail_under = 20
