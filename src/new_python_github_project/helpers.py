@@ -14,6 +14,81 @@ from PyQt6.QtGui import QIcon, QGuiApplication
 from new_python_github_project.config import Config
 from new_python_github_project.exceptions import ConfigException
 
+if platform.system() == "Windows":
+    import ctypes
+    from ctypes import wintypes  # noqa: F401
+
+
+def _is_attached_to_console() -> bool:
+    """Check if the current Windows process is attached to a console.
+
+    Returns True if the process is attached to a console (e.g., launched from
+    Command Prompt or PowerShell), False otherwise.
+
+    :return: True if attached to console, False otherwise
+    :rtype: bool
+    """
+    if platform.system() != "Windows":
+        return False
+
+    try:
+        # Try to get console window handle
+        kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+        console_window = kernel32.GetConsoleWindow()
+        return console_window != 0
+    except Exception:
+        return False
+
+
+def _detach_from_console_windows(config: Config, ctx: click.Context) -> None:
+    """Detach from console on Windows by restarting the process.
+
+    This function creates a new detached process and exits the current one,
+    allowing the terminal prompt to return to the user.
+
+    :param config: Configuration object
+    :type config: Config
+    :param ctx: Click context
+    :type ctx: click.Context
+    """
+    # Prepare the command to restart the process
+    python_exe = sys.executable
+    script_args = sys.argv[:]
+
+    # Use the same working directory
+    cwd = os.getcwd()
+
+    # Prepare subprocess flags for detachment
+    CREATE_NEW_PROCESS_GROUP = 0x00000200
+    DETACHED_PROCESS = 0x00000008
+    CREATE_NO_WINDOW = 0x08000000
+
+    startup_info = subprocess.STARTUPINFO()  # type: ignore[attr-defined]
+    startup_info.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # type: ignore[attr-defined]
+    startup_info.wShowWindow = subprocess.SW_HIDE  # type: ignore[attr-defined]
+
+    try:
+        # Start the detached process
+        subprocess.Popen(
+            [python_exe] + script_args,
+            cwd=cwd,
+            creationflags=CREATE_NEW_PROCESS_GROUP
+            | DETACHED_PROCESS
+            | CREATE_NO_WINDOW,
+            startupinfo=startup_info,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+        )
+
+        logging.info("Successfully detached from console. Original process exiting.")
+        # Exit the original process so terminal prompt returns
+        sys.exit(0)
+
+    except Exception as e:
+        logging.error(f"Failed to detach from console: {e}")
+        # Continue running attached if detachment fails
+
 
 def check_another_instance_running(config: Config) -> None:
     """Check if another instance of the application is running.
@@ -76,17 +151,26 @@ def daemonize(config: Config, verbose: bool = False) -> None:
     """Detach the process from the terminal and run in the background.
 
     This function:
-    1. Forks a child process
-    2. Creates a new session
-    3. Redirects standard I/O to /dev/null
-    4. Changes working directory to root
+    1. Forks a child process (Unix only)
+    2. Creates a new session (Unix only)
+    3. Redirects standard I/O to /dev/null (Unix only)
+    4. Changes working directory to root (Unix only)
     5. Reconfigures logging for the daemon process
+
+    On Windows, this function does minimal setup since Windows doesn't support forking.
 
     :param config: Configuration object
     :type config: Config
     :param verbose: Whether to use verbose logging in daemon
     :type verbose: bool
     """
+    if platform.system() == "Windows":
+        # Windows doesn't support forking, so just set up logging
+        log_path = config.get_logfile_path()
+        _setup_daemon_logging(str(log_path), verbose)
+        return
+
+    # Unix-specific daemonization
     # Fork the first time
     try:
         pid = os.fork()
@@ -133,11 +217,24 @@ def daemonize(config: Config, verbose: bool = False) -> None:
 def detach_from_terminal(config: Config, ctx: click.Context) -> None:
     """Detach the process from the terminal if not already detached.
 
+    On Windows, this function detaches by restarting the process in a detached state.
+    On Unix systems, it uses traditional daemonization with forking.
+
     :param config: Configuration object
     :type config: Config
     :param ctx: Click context
     :type ctx: click.Context
     """
+    if platform.system() == "Windows":
+        # Check if we're attached to a console and detach if so
+        if _is_attached_to_console():
+            _detach_from_console_windows(config, ctx)
+            # Note: _detach_from_console_windows() calls sys.exit(0) if successful
+            # If we reach here, detachment failed but we continue running
+        config.write_lockfile()
+        return
+
+    # Unix-specific terminal detachment check
     if os.getpgrp() == os.tcgetpgrp(sys.stdout.fileno()):
         verbose = ctx.obj.get("VERBOSE", False)
         daemonize(config, verbose)
