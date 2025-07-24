@@ -1,5 +1,6 @@
 import configparser
 import shutil
+import typing
 from pathlib import Path
 from unittest.mock import mock_open, patch
 
@@ -253,7 +254,7 @@ class TestConfig:
         # Create a more realistic mock that only affects the default template reading
         original_open = open
 
-        def selective_mock_open(filename, *args, **kwargs):
+        def selective_mock_open(filename: str, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
             if str(filename) == str(mock_default_path):
                 return mock_open(read_data=default_content)()
             return original_open(filename, *args, **kwargs)

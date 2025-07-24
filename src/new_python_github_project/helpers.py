@@ -35,7 +35,7 @@ def _is_attached_to_console() -> bool:
         # Try to get console window handle
         kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
         console_window = kernel32.GetConsoleWindow()
-        return console_window != 0
+        return bool(console_window != 0)
     except Exception:
         return False
 
@@ -171,15 +171,96 @@ def create_qapplication(config: Config) -> QApplication:
 # Since this is a GUI application, it is appropriate to detach it from the terminal. This enables the
 # user to close the terminal without killing the application.
 # TODO: Check if there is a PyPI module that does this.
+def _detach_macos_gui(config: Config, ctx: click.Context) -> None:
+    """Detach macOS GUI application from terminal using subprocess restart.
+    
+    **Why macOS needs special handling:**
+    
+    On macOS, GUI applications (especially PyQt/Qt-based ones) cannot be properly 
+    forked like traditional Unix processes because:
+    
+    1. **Window Server Connection**: The macOS window server maintains connections
+       to processes that are broken when forking. The child process loses the
+       ability to create windows or display GUI elements.
+       
+    2. **AppKit Framework**: macOS's AppKit framework (which Qt uses internally)
+       is not fork-safe. Forked processes cannot properly initialize or use
+       AppKit services required for GUI functionality.
+       
+    3. **Process Environment**: GUI applications on macOS require specific
+       environment setup and process attributes that are lost during forking.
+    
+    **Solution: Subprocess Restart**
+    
+    Instead of forking, we restart the entire application as a new subprocess:
+    - The new process has a clean GUI environment
+    - Window server connections are properly established
+    - AppKit framework initializes correctly
+    - The original process exits, returning terminal control to the user
+    
+    This approach sacrifices some memory efficiency (full process restart vs fork)
+    but ensures GUI functionality works correctly on macOS.
+    
+    :param config: Configuration object
+    :type config: Config  
+    :param ctx: Click context
+    :type ctx: click.Context
+    """
+    # Prepare the command to restart the process without detaching
+    script_args = ["-m", "new_python_github_project.main"] + sys.argv[1:] + ["--no-detach"]
+    
+    # Use the same working directory and executable
+    cwd = os.getcwd()
+    executable = sys.executable
+    
+    try:
+        # Log the command being executed for debugging
+        command = [executable] + script_args
+        logging.info(f"macOS GUI detach: Starting detached process: {' '.join(command)}")
+        
+        # Create log files for the detached process
+        log_dir = config.config_dir
+        log_dir.mkdir(parents=True, exist_ok=True)
+        stdout_log = log_dir / "detached_stdout.log"
+        stderr_log = log_dir / "detached_stderr.log"
+        
+        # Start the detached process with proper macOS GUI environment
+        process = subprocess.Popen(
+            command,
+            cwd=cwd,
+            stdout=open(str(stdout_log), "w"),
+            stderr=open(str(stderr_log), "w"),
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,  # Detach from terminal
+        )
+        
+        logging.info(
+            f"macOS GUI detach: Successfully started detached process. PID: {process.pid}. Original process exiting."
+        )
+        # Exit the original process so terminal prompt returns
+        sys.exit(0)
+        
+    except Exception as e:
+        logging.error(f"macOS GUI detach failed: {e}")
+        logging.error(f"Attempted command: {command}")
+        # Continue running attached if detachment fails
+
+
 def daemonize(config: Config, verbose: bool = False) -> None:
     """Detach the process from the terminal and run in the background.
 
-    This function:
-    1. Forks a child process (Unix only)
-    2. Creates a new session (Unix only)
-    3. Redirects standard I/O to /dev/null (Unix only)
-    4. Changes working directory to root (Unix only)
-    5. Reconfigures logging for the daemon process
+    **IMPORTANT**: This function should only be used on Linux/Unix systems where
+    GUI frameworks are fork-safe. It should NOT be used on macOS for GUI applications
+    due to AppKit/window server limitations. See _detach_macos_gui() for the macOS
+    alternative.
+
+    This function implements traditional Unix double-fork daemonization:
+    1. First fork: Creates child process, parent exits
+    2. Creates new session with setsid()
+    3. Changes working directory to root
+    4. Second fork: Prevents acquiring controlling terminal
+    5. Redirects standard I/O to /dev/null
+    6. Reconfigures logging for the daemon process
 
     On Windows, this function does minimal setup since Windows doesn't support forking.
 
@@ -197,7 +278,7 @@ def daemonize(config: Config, verbose: bool = False) -> None:
     # Unix-specific daemonization
     # Fork the first time
     try:
-        pid = os.fork()  # type: ignore[attr-defined]
+        pid = os.fork()
         if pid > 0:
             logging.info(
                 f"Fork #1 successful. Forked child process with PID {pid}. Parent process exiting."
@@ -210,12 +291,12 @@ def daemonize(config: Config, verbose: bool = False) -> None:
 
     # Decouple from parent environment
     os.chdir("/")
-    os.setsid()  # type: ignore[attr-defined]
+    os.setsid()
     os.umask(0)
 
     # Fork a second time
     try:
-        pid = os.fork()  # type: ignore[attr-defined]
+        pid = os.fork()
         if pid > 0:
             logging.info("Fork #2 successful. Parent process exiting.")
             # Parent process exits
@@ -241,8 +322,22 @@ def daemonize(config: Config, verbose: bool = False) -> None:
 def detach_from_terminal(config: Config, ctx: click.Context) -> None:
     """Detach the process from the terminal if not already detached.
 
-    On Windows, this function detaches by restarting the process in a detached state.
-    On Unix systems, it uses traditional daemonization with forking.
+    This function implements platform-specific strategies for detaching GUI applications
+    from the terminal while preserving their ability to display windows:
+
+    **Windows**: Uses process restart with special Windows flags (DETACHED_PROCESS, etc.)
+    to create a new process that's not attached to the console. This is necessary because
+    Windows doesn't have Unix-style forking.
+
+    **macOS**: Uses subprocess restart because PyQt/GUI applications cannot be forked
+    on macOS due to AppKit framework limitations and window server connection issues.
+    See _detach_macos_gui() for detailed explanation.
+
+    **Linux/Unix**: Uses traditional double-fork daemonization which works well on
+    Linux because the X11 window system and GUI frameworks are fork-safe.
+
+    The goal across all platforms is the same: allow the user's terminal to return
+    to the prompt while the GUI application continues running in the background.
 
     :param config: Configuration object
     :type config: Config
@@ -258,8 +353,17 @@ def detach_from_terminal(config: Config, ctx: click.Context) -> None:
         config.write_lockfile()
         return
 
-    # Unix-specific terminal detachment check
-    if os.getpgrp() == os.tcgetpgrp(sys.stdout.fileno()):  # type: ignore[attr-defined]
+    if platform.system() == "Darwin":
+        # macOS: GUI apps cannot use traditional daemonization as it breaks
+        # the connection to the window server. Use subprocess restart approach.
+        # This is a macOS-specific limitation of PyQt/AppKit framework interaction.
+        _detach_macos_gui(config, ctx)
+        config.write_lockfile()
+        return
+
+    # Linux/Unix systems: Use traditional double-fork daemonization
+    # This works because X11 and most Linux GUI frameworks are fork-safe
+    if os.getpgrp() == os.tcgetpgrp(sys.stdout.fileno()):
         verbose = ctx.obj.get("VERBOSE", False)
         daemonize(config, verbose)
     config.write_lockfile()
