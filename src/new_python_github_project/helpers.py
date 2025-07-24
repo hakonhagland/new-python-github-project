@@ -90,9 +90,11 @@ def _detach_from_console_windows(config: Config, ctx: click.Context) -> None:
         stderr_log = log_dir / "detached_stderr.log"
 
         # Start the detached process with logging
+        # Pass current environment to preserve virtual environment and PATH
         process = subprocess.Popen(
             command,
             cwd=cwd,
+            env=os.environ.copy(),  # Preserve current environment including venv
             creationflags=CREATE_NEW_PROCESS_GROUP
             | DETACHED_PROCESS
             | CREATE_NO_WINDOW,
@@ -229,9 +231,11 @@ def _detach_macos_gui(config: Config, ctx: click.Context) -> None:
         stderr_log = log_dir / "detached_stderr.log"
         
         # Start the detached process with proper macOS GUI environment
+        # Pass current environment to preserve virtual environment and PATH
         process = subprocess.Popen(
             command,
             cwd=cwd,
+            env=os.environ.copy(),  # Preserve current environment including venv
             stdout=open(str(stdout_log), "w"),
             stderr=open(str(stderr_log), "w"),
             stdin=subprocess.DEVNULL,
@@ -399,7 +403,7 @@ def edit_config_file(config: Config) -> None:
         raise ConfigException(f"Unknown platform: {platform.system()}")
     logging.info(f"Running: {cmd} {args}")
     try:
-        subprocess.Popen([cmd, *args], start_new_session=True)
+        subprocess.Popen([cmd, *args], env=os.environ.copy(), start_new_session=True)
     except FileNotFoundError as e:
         logging.error(f"{e}")
         logging.error(
@@ -550,21 +554,27 @@ def _fix_macos_app_name() -> None:
     to dynamically set the CFBundleName to fix this issue.
     """
     try:
-        import os
-        import sys
         from Foundation import NSBundle
         
         bundle = NSBundle.mainBundle()
         if bundle:
-            # Use the application display name instead of script name
             app_name = "New Python GitHub Project"
             app_info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
-            if app_info:
+            
+            # For Python scripts, the info dict exists but may be empty
+            # We can still modify it to set CFBundleName
+            if app_info is not None:
                 app_info['CFBundleName'] = app_name
                 logging.info(f"Set macOS app name to: {app_name}")
+            else:
+                logging.warning("Could not get app info dictionary")
+        else:
+            logging.warning("Could not get NSBundle.mainBundle()")
     except ImportError:
         logging.warning("PyObjC not available - macOS menu bar will show 'Python'")
         logging.info("To fix this, install PyObjC: pip install pyobjc-framework-Cocoa")
+    except Exception as e:
+        logging.error(f"Error in _fix_macos_app_name(): {e}")
 
 
 def _locate_hicolor_icons() -> Path | None:
