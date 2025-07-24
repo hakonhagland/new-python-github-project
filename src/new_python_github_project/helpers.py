@@ -526,13 +526,79 @@ def _add_app_to_tray(app: QApplication, config: Config) -> None:
         show_action.triggered.connect(on_show)
 
 
+def _load_windows_icon() -> QIcon:
+    """Load icon specifically for Windows platform.
+
+    Uses direct file paths for better Windows taskbar integration.
+    Tries multiple icon sizes from the hicolor icon directory with fallback to data directory.
+
+    :returns: QIcon object for Windows
+    :rtype: QIcon
+    """
+    # First try the proper hicolor icons directory
+    project_root = Path(__file__).parent.parent.parent
+    hicolor_dir = project_root / "icons" / "hicolor"
+
+    # Try hicolor icons in order of preference for Windows
+    hicolor_paths = [
+        hicolor_dir
+        / "512x512"
+        / "apps"
+        / "new-python-gh-project.png",  # Best for Windows
+        hicolor_dir / "256x256" / "apps" / "new-python-gh-project.png",  # Good fallback
+        hicolor_dir
+        / "48x48"
+        / "apps"
+        / "new-python-gh-project.png",  # Smaller fallback
+    ]
+
+    # Create icon with multiple sizes for best Windows display
+    icon = QIcon()
+    found_icon = False
+
+    # Try hicolor icons first (proper application icons)
+    for icon_path in hicolor_paths:
+        if icon_path.exists():
+            logging.info(f"Loading Windows hicolor icon: {icon_path}")
+            icon.addFile(str(icon_path))
+            found_icon = True
+
+    # Fallback to data directory icons if hicolor not found
+    if not found_icon:
+        icon_dir = Path(__file__).parent / "data"
+        data_paths = [
+            icon_dir / "icon-256.png",
+            icon_dir / "icon-128.png",
+            icon_dir / "icon.png",
+            icon_dir / "icon.svg",
+        ]
+
+        for icon_path in data_paths:
+            if icon_path.exists():
+                logging.info(f"Loading Windows fallback icon: {icon_path}")
+                icon.addFile(str(icon_path))
+                found_icon = True
+
+    if not found_icon:
+        logging.warning("No custom icons found for Windows. Using theme fallback.")
+        icon = QIcon.fromTheme("applications-python")
+
+    return icon
+
+
 def _load_icons(app: QApplication, config: Config) -> None:
     """Load icons for the application."""
     if platform.system() == "Linux":
         # This is required on Linux to make the app's icon appear in the application menu and dock
         QGuiApplication.setDesktopFileName(config.appname)
 
-    # Set up icon theme and load icon for all platforms
+    # Windows-specific icon handling for better taskbar and window integration
+    if platform.system() == "Windows":
+        icon = _load_windows_icon()
+        app.setWindowIcon(icon)
+        return
+
+    # Set up icon theme and load icon for Linux/macOS
     QIcon.setThemeName("hicolor")
     QIcon.setFallbackThemeName("hicolor")  # fallback if theme not found
     icons_root = _locate_hicolor_icons()

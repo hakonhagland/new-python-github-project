@@ -18,6 +18,7 @@ from PyQt6.QtGui import (
     QGuiApplication,
     QResizeEvent,
     QCloseEvent,
+    QIcon,
 )
 from PyQt6.QtWidgets import QApplication
 from typing import cast, List, Optional
@@ -521,6 +522,9 @@ class MainWindow(QMainWindow):
         # Set window class for desktop integration
         self.setObjectName("Python Project Creator")
 
+        # Set window icon explicitly for better Windows compatibility
+        self._set_window_icon()
+
         # Set default window size
         default_width = 1250
         default_height = 970
@@ -582,6 +586,71 @@ class MainWindow(QMainWindow):
         logging.info(f"Window size: {self.window_width}x{self.window_height}")
         if self.window_width < default_width or self.window_height < default_height:
             logging.info("Window size adjusted to fit screen")
+
+    def _set_window_icon(self) -> None:
+        """Set the window icon explicitly for better cross-platform compatibility.
+
+        This method sets the window icon directly on the MainWindow, which is
+        especially important on Windows where the application-level icon may not
+        always be properly displayed in the taskbar and window title bar.
+        """
+        import platform
+        from pathlib import Path
+
+        if platform.system() == "Windows":
+            # Use direct file loading for Windows - try hicolor icons first
+            project_root = Path(__file__).parent.parent.parent
+            hicolor_dir = project_root / "icons" / "hicolor"
+
+            # Try hicolor icons first (proper application icons)
+            hicolor_paths = [
+                hicolor_dir / "512x512" / "apps" / "new-python-gh-project.png",
+                hicolor_dir / "256x256" / "apps" / "new-python-gh-project.png",
+                hicolor_dir / "48x48" / "apps" / "new-python-gh-project.png",
+            ]
+
+            icon = QIcon()
+            found_icon = False
+
+            # Try hicolor icons first
+            for icon_path in hicolor_paths:
+                if icon_path.exists():
+                    icon.addFile(str(icon_path))
+                    logging.info(f"Added window hicolor icon: {icon_path}")
+                    found_icon = True
+
+            # Fallback to data directory if hicolor not found
+            if not found_icon:
+                icon_dir = Path(__file__).parent / "data"
+                data_paths = [
+                    icon_dir / "icon-256.png",
+                    icon_dir / "icon-128.png",
+                    icon_dir / "icon.png",
+                    icon_dir / "icon.svg",
+                ]
+
+                for icon_path in data_paths:
+                    if icon_path.exists():
+                        icon.addFile(str(icon_path))
+                        logging.info(f"Added window fallback icon: {icon_path}")
+                        found_icon = True
+
+            if found_icon and not icon.isNull():
+                self.setWindowIcon(icon)
+                logging.info("Window icon set successfully for Windows")
+            else:
+                logging.warning("Could not find any icon files for Windows window")
+        else:
+            # For Linux/macOS, try to use the application icon
+            app_icon = self.app.windowIcon()
+            if not app_icon.isNull():
+                self.setWindowIcon(app_icon)
+                logging.info("Window icon set from application icon")
+            else:
+                # Fallback to theme icon
+                fallback_icon = QIcon.fromTheme("applications-python")
+                self.setWindowIcon(fallback_icon)
+                logging.info("Window icon set to fallback theme icon")
 
     def setup_menu(self) -> None:
         """Setup the menu bar with file operations.
