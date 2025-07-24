@@ -20,7 +20,7 @@ dependencies = [
 [tool.uv]
 dev-dependencies = [
     "coverage>=7.6.1",
-    "mypy>=1.11.2",
+    "mypy>=1.17.0",
     "pytest-mock>=3.14.0",
     "pytest>=8.3.3",
     "ruff>=0.6.6",
@@ -35,6 +35,8 @@ dev-dependencies = [
     "pytest-qt>=4.5.0",
     "pytest-xvfb>=3.1.1",
     "sphinx-autodoc-typehints>=2.3.0",
+    "sphinx-click-rst-to-ansi-formatter>=0.1.1",
+    "types-requests>=2.32.0.20240914",
 ]
 
 [project.scripts]

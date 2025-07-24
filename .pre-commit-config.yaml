@@ -14,26 +14,16 @@ repos:
       - id: ruff
         args: [ "--fix" ]
       - id: ruff-format
--   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.17.0
+-   repo: local
     hooks:
       - id: mypy
-      # Note: since we run mypy on the tests/ folder also we need to add pytest as
-      #       additional dependency
-        additional_dependencies:
-          - types-click==7.1.8
-          - mypy==1.17.0
-          - pytest==8.3.3
-          - platformdirs==4.3.6
-          - sphinx-click-rst-to-ansi-formatter==0.1.1
-          - pytest-mock==3.14.0
-          - types-colorama==0.4.15.20240311
-          - types-click==7.1.8
-          - types-requests>=2.32.0.20240914
-          - PyQt6>=6.9.0
-        args: []
-        pass_filenames: false
+        name: mypy
+        # Use system language to leverage pyproject.toml dependencies instead of duplicating them
+        language: system
         entry: mypy src tests
+        types: [python]
+        pass_filenames: false
+        always_run: true
 -   repo: https://github.com/rstcheck/rstcheck
     rev: v6.2.5
     hooks:
