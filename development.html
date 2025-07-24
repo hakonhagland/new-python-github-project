@@ -102,12 +102,25 @@ a pull request!</p>
 </dl>
 </li>
 <li><dl class="simple">
+<dt>On Windows, either:</dt><dd><ul>
+<li><p><a class="reference external" href="https://chocolatey.org/install">Install Chocolatey</a> and run <code class="docutils literal notranslate"><span class="pre">choco</span> <span class="pre">install</span> <span class="pre">make</span></code></p></li>
+<li><p>Or install <a class="reference external" href="https://git-scm.com/download/win">Git for Windows</a> and use Git Bash (which includes <code class="docutils literal notranslate"><span class="pre">make</span></code>)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
 <dt>Then, from the root directory of this repository:</dt><dd><ul>
-<li><p>run <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">venv</span></code> to create a virtual environment</p></li>
-<li><p>run <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code> to install dependencies into a virtual environment</p></li>
-<li><p>run <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">&quot;.[dev]&quot;</span></code> to install the development dependencies</p></li>
-<li><p>run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test</span></code> to run the test suite</p></li>
+<li><p>run <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">venv</span></code> to create a virtual environment. If you are not able to install the exact Python versions
+listed in <cite>.python_version</cite>, you can use <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">venv</span> <span class="pre">--python=&lt;python-version&gt;</span></code> to specify a different Python
+interpreter.</p></li>
+<li><p>run <code class="docutils literal notranslate"><span class="pre">`source</span> <span class="pre">.venv/bin/activate`</span></code> on Linux/macOS or <code class="docutils literal notranslate"><span class="pre">.venv\Scripts\activate</span></code> on Windows to activate
+the virtual environment. Note that by installing into a virtual environment the icons will not be installed
+correctly on Linux, but this might not be a problem if you are developing the application.</p></li>
+<li><p>run <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span></code> or <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span> <span class="pre">--python=&lt;python-version&gt;</span></code> to install the dependencies</p></li>
 <li><p>run <code class="docutils literal notranslate"><span class="pre">pre-commit</span> <span class="pre">install</span></code> to install the pre-commit hooks</p></li>
+<li><p>run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">pre-commit</span></code> to run the pre-commit hooks on all files</p></li>
+<li><p>run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test</span></code> to run the test suite</p></li>
 <li><p>run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">coverage</span></code> to run unit tests and generate coverage report</p></li>
 </ul>
 </dd>
