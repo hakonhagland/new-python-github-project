@@ -57,3 +57,13 @@ exclude = [
 
 [tool.coverage.report]
 fail_under = 20
+
+# Configure pytest to run Qt applications in headless mode for local development
+# This ensures consistent behavior across all platforms (macOS, Linux, Windows)
+# when running tests via pytest, make test, make coverage, or pre-commit hooks
+# Note: --no-xvfb disables pytest-xvfb on macOS where it conflicts with QT_QPA_PLATFORM
+[tool.pytest.ini_options]
+addopts = "--no-xvfb"
+env = [
+    "QT_QPA_PLATFORM=offscreen"
+]

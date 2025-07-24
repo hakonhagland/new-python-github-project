@@ -13,6 +13,9 @@ jobs:
             os: [ubuntu-latest, macos-latest, windows-latest]
             python-version: ["3.10", "3.11", "3.12", "3.13"]
     env:
+      # Run Qt applications in headless mode for CI environments
+      # This prevents X11 display issues on Linux and ensures consistent
+      # cross-platform behavior in GitHub Actions runners
       QT_QPA_PLATFORM: offscreen
     steps:
       - name: checkout source code
