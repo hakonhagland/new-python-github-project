@@ -29,7 +29,12 @@ Always activate the virtual environment before running commands:
 source .venv/bin/activate
 ```
 
-**For WSL/Linux environments**: When running Claude Code from WSL or Linux, use a separate virtual environment to avoid conflicts with the Windows `.venv`:
+**For WSL/Linux environments**: When running Claude Code from WSL or Linux, you cannot use the Windows `.venv` directory because:
+- Windows virtual environments contain `.exe` files that cannot execute in Linux
+- The `uv.lock` file contains Windows-specific Python interpreter paths
+- Cross-platform path conflicts prevent proper tool execution
+
+Therefore, create a separate Linux virtual environment:
 
 ```bash
 # First-time WSL setup (install required system packages - run manually)
@@ -39,7 +44,9 @@ source .venv/bin/activate
 # Create Linux-specific virtual environment (one-time setup)
 python3 -m venv .venv-linux
 source .venv-linux/bin/activate
-pip install -e ".[dev]"  # Install all dependencies including dev tools
+pip install -e .  # Install main dependencies
+pip install coverage mypy pytest-mock pytest ruff sphinx-rtd-theme pre-commit rstcheck tox pytest-qt pytest-xvfb sphinx-autodoc-typehints types-click types-colorama
+# Note: Manual installation needed because dev dependencies are in uv-specific [tool.uv] section
 pre-commit install
 
 # For subsequent commands, always use .venv-linux
