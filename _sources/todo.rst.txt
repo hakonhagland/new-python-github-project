@@ -12,7 +12,7 @@ macOS CMD+Tab Generic Icon
 
 **Status**: Open
 
-**Description**: 
+**Description**:
 On macOS, when using CMD+Tab to switch between applications, the New Python GitHub Project app displays a generic Python icon instead of the custom application icon.
 
 **Root Cause**:
@@ -65,7 +65,7 @@ GUI Improvements
    - Respect system theme preferences
    - Custom color schemes
 
-2. **Window Management**  
+2. **Window Management**
    - Remember window size and position
    - Multiple project windows support
    - Tabbed interface for multiple projects
@@ -159,5 +159,5 @@ If you'd like to work on any of these items:
 
 Priority levels:
 - **High**: Critical functionality, major bugs
-- **Medium**: Important features, minor bugs  
+- **Medium**: Important features, minor bugs
 - **Low**: Nice-to-have features, cosmetic issues
