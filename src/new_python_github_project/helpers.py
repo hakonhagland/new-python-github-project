@@ -162,6 +162,10 @@ def create_qapplication(config: Config) -> QApplication:
     app.setOrganizationDomain("github.com")
     app.setApplicationVersion("1.0.0")
 
+    # macOS-specific: Fix menu bar application name showing as "Python"
+    if platform.system() == "Darwin":
+        _fix_macos_app_name()
+
     # TODO: The app does not need a tray icon yet, but it is possible to add it back later
     #  _add_app_to_tray(app, config)
     app.aboutToQuit.connect(config.remove_lockfile)
@@ -536,6 +540,31 @@ def _load_icons(app: QApplication, config: Config) -> None:
 
     # Set window icon on all platforms
     app.setWindowIcon(icon)
+
+
+def _fix_macos_app_name() -> None:
+    """Fix macOS menu bar showing 'Python' instead of application name.
+    
+    On macOS, PyQt applications running through the Python interpreter
+    show 'Python' in the menu bar by default. This function uses PyObjC
+    to dynamically set the CFBundleName to fix this issue.
+    """
+    try:
+        import os
+        import sys
+        from Foundation import NSBundle
+        
+        bundle = NSBundle.mainBundle()
+        if bundle:
+            # Use the application display name instead of script name
+            app_name = "New Python GitHub Project"
+            app_info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
+            if app_info:
+                app_info['CFBundleName'] = app_name
+                logging.info(f"Set macOS app name to: {app_name}")
+    except ImportError:
+        logging.warning("PyObjC not available - macOS menu bar will show 'Python'")
+        logging.info("To fix this, install PyObjC: pip install pyobjc-framework-Cocoa")
 
 
 def _locate_hicolor_icons() -> Path | None:
