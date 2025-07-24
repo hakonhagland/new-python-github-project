@@ -10,6 +10,7 @@ Welcome to ``new-python-github-project``'s documentation!
     usage
     Development <development>
     Debugging <debugging>
+    TODO and Roadmap <todo>
     Source code <source>
 
 Indices and tables
