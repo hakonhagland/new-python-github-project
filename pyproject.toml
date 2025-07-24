@@ -65,6 +65,3 @@ fail_under = 20
 # Note: --no-xvfb disables pytest-xvfb on macOS where it conflicts with QT_QPA_PLATFORM
 [tool.pytest.ini_options]
 addopts = "--no-xvfb"
-env = [
-    "QT_QPA_PLATFORM=offscreen"
-]

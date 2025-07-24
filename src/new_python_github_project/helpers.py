@@ -179,57 +179,61 @@ def create_qapplication(config: Config) -> QApplication:
 # TODO: Check if there is a PyPI module that does this.
 def _detach_macos_gui(config: Config, ctx: click.Context) -> None:
     """Detach macOS GUI application from terminal using subprocess restart.
-    
+
     **Why macOS needs special handling:**
-    
-    On macOS, GUI applications (especially PyQt/Qt-based ones) cannot be properly 
+
+    On macOS, GUI applications (especially PyQt/Qt-based ones) cannot be properly
     forked like traditional Unix processes because:
-    
+
     1. **Window Server Connection**: The macOS window server maintains connections
        to processes that are broken when forking. The child process loses the
        ability to create windows or display GUI elements.
-       
+
     2. **AppKit Framework**: macOS's AppKit framework (which Qt uses internally)
        is not fork-safe. Forked processes cannot properly initialize or use
        AppKit services required for GUI functionality.
-       
+
     3. **Process Environment**: GUI applications on macOS require specific
        environment setup and process attributes that are lost during forking.
-    
+
     **Solution: Subprocess Restart**
-    
+
     Instead of forking, we restart the entire application as a new subprocess:
     - The new process has a clean GUI environment
     - Window server connections are properly established
     - AppKit framework initializes correctly
     - The original process exits, returning terminal control to the user
-    
+
     This approach sacrifices some memory efficiency (full process restart vs fork)
     but ensures GUI functionality works correctly on macOS.
-    
+
     :param config: Configuration object
-    :type config: Config  
+    :type config: Config
     :param ctx: Click context
     :type ctx: click.Context
     """
     # Prepare the command to restart the process without detaching
-    script_args = ["-m", "new_python_github_project.main"] + sys.argv[1:] + ["--no-detach"]
-    
+    script_args = (
+        ["-m", "new_python_github_project.main"] + sys.argv[1:] + ["--no-detach"]
+    )
+
     # Use the same working directory and executable
     cwd = os.getcwd()
     executable = sys.executable
-    
+
     try:
         # Log the command being executed for debugging
         command = [executable] + script_args
-        logging.info(f"macOS GUI detach: Starting detached process: {' '.join(command)}")
-        
+        logging.info(
+            f"macOS GUI detach: Starting detached process: {' '.join(command)}"
+        )
+
         # Create log files for the detached process
         log_dir = config.config_dir
         log_dir.mkdir(parents=True, exist_ok=True)
         stdout_log = log_dir / "detached_stdout.log"
         stderr_log = log_dir / "detached_stderr.log"
-        
+
         # Start the detached process with proper macOS GUI environment
         # Pass current environment to preserve virtual environment and PATH
         process = subprocess.Popen(
@@ -241,13 +245,13 @@ def _detach_macos_gui(config: Config, ctx: click.Context) -> None:
             stdin=subprocess.DEVNULL,
             start_new_session=True,  # Detach from terminal
         )
-        
+
         logging.info(
             f"macOS GUI detach: Successfully started detached process. PID: {process.pid}. Original process exiting."
         )
         # Exit the original process so terminal prompt returns
         sys.exit(0)
-        
+
     except Exception as e:
         logging.error(f"macOS GUI detach failed: {e}")
         logging.error(f"Attempted command: {command}")
@@ -548,23 +552,23 @@ def _load_icons(app: QApplication, config: Config) -> None:
 
 def _fix_macos_app_name() -> None:
     """Fix macOS menu bar showing 'Python' instead of application name.
-    
+
     On macOS, PyQt applications running through the Python interpreter
     show 'Python' in the menu bar by default. This function uses PyObjC
     to dynamically set the CFBundleName to fix this issue.
     """
     try:
         from Foundation import NSBundle
-        
+
         bundle = NSBundle.mainBundle()
         if bundle:
             app_name = "New Python GitHub Project"
             app_info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
-            
+
             # For Python scripts, the info dict exists but may be empty
             # We can still modify it to set CFBundleName
             if app_info is not None:
-                app_info['CFBundleName'] = app_name
+                app_info["CFBundleName"] = app_name
                 logging.info(f"Set macOS app name to: {app_name}")
             else:
                 logging.warning("Could not get app info dictionary")
