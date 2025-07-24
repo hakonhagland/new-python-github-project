@@ -138,6 +138,14 @@ git commit -m "your message"  # Hooks will now work properly
 
 **Why virtual environment is required**: Pre-commit hooks inherit the shell environment. If the virtual environment isn't activated, hooks that depend on tools like `coverage` (installed in `.venv`) will fail with "command not found" errors.
 
+**Cross-Platform Pre-commit Hook Management**:
+The project supports both Windows (.venv) and Linux (.venv-linux) environments. However, `pre-commit install` creates hooks with hardcoded Python paths, so the last environment to run `pre-commit install` determines which environment the hooks will work in.
+
+**For Claude Code sessions**:
+- Claude uses `.venv-linux` and may run `pre-commit install` during development
+- **After Claude sessions that involve commits**: User should run `pre-commit install` in Windows to restore Windows compatibility
+- Claude will explicitly notify when this is needed
+
 **Alternative approaches**:
 - Run hooks manually first: `make pre-commit` (after activating venv)
 - Bypass failing hooks if needed: `git commit --no-verify -m "message"`
