@@ -29,6 +29,35 @@ Always activate the virtual environment before running commands:
 source .venv/bin/activate
 ```
 
+**For WSL/Linux environments**: When running Claude Code from WSL or Linux, use a separate virtual environment to avoid conflicts with the Windows `.venv`:
+
+```bash
+# First-time WSL setup (install required system packages - run manually)
+# sudo apt update
+# sudo apt install python3.12-venv
+
+# Create Linux-specific virtual environment (one-time setup)
+python3 -m venv .venv-linux
+source .venv-linux/bin/activate
+pip install -e ".[dev]"  # Install all dependencies including dev tools
+pre-commit install
+
+# For subsequent commands, always use .venv-linux
+source .venv-linux/bin/activate
+```
+
+**Additional WSL dependencies** (optional, for full functionality):
+```bash
+# For Docker commands (make docker-container)
+sudo apt install docker.io
+sudo usermod -aG docker $USER  # Logout/login required
+
+# For GUI testing (pytest-xvfb already handles headless testing)
+sudo apt install xvfb
+```
+
+**Claude Code Instruction**: When detecting you're running in a WSL/Linux environment, always use `.venv-linux/bin/activate` instead of `.venv/bin/activate` for all development commands.
+
 ### Common Commands
 ```bash
 # Run tests
