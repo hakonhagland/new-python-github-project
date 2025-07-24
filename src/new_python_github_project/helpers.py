@@ -275,10 +275,12 @@ def daemonize(config: Config, verbose: bool = False) -> None:
         _setup_daemon_logging(str(log_path), verbose)
         return
 
-    # Unix-specific daemonization
+    # Unix-specific daemonization (Linux/macOS/other Unix systems)
+    # Note: The type: ignore comments below are needed for Windows CI where these
+    # os functions don't exist, but will be marked as "unused" on Unix systems
     # Fork the first time
     try:
-        pid = os.fork()
+        pid = os.fork()  # type: ignore[attr-defined]
         if pid > 0:
             logging.info(
                 f"Fork #1 successful. Forked child process with PID {pid}. Parent process exiting."
@@ -291,12 +293,12 @@ def daemonize(config: Config, verbose: bool = False) -> None:
 
     # Decouple from parent environment
     os.chdir("/")
-    os.setsid()
+    os.setsid()  # type: ignore[attr-defined]
     os.umask(0)
 
     # Fork a second time
     try:
-        pid = os.fork()
+        pid = os.fork()  # type: ignore[attr-defined]
         if pid > 0:
             logging.info("Fork #2 successful. Parent process exiting.")
             # Parent process exits
@@ -363,7 +365,8 @@ def detach_from_terminal(config: Config, ctx: click.Context) -> None:
 
     # Linux/Unix systems: Use traditional double-fork daemonization
     # This works because X11 and most Linux GUI frameworks are fork-safe
-    if os.getpgrp() == os.tcgetpgrp(sys.stdout.fileno()):
+    # Note: type: ignore needed for Windows CI, will be "unused" on Unix systems
+    if os.getpgrp() == os.tcgetpgrp(sys.stdout.fileno()):  # type: ignore[attr-defined]
         verbose = ctx.obj.get("VERBOSE", False)
         daemonize(config, verbose)
     config.write_lockfile()

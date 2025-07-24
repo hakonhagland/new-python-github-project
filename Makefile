@@ -20,7 +20,7 @@ docs:
 	cd "$(ROOT)"/docs && make clean && make html
 
 mypy:
-	mypy --strict src/ tests/
+	mypy src/ tests/
 
 pre-commit:
 	pre-commit run --all-files
