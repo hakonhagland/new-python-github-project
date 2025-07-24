@@ -1,0 +1,281 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TODO and Roadmap &mdash; new-python-github-project 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Source code" href="source.html" />
+    <link rel="prev" title="Debugging the Daemonized Application" href="debugging.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            new-python-github-project
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">TODO and Roadmap</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#known-issues">Known Issues</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#macos-cmd-tab-generic-icon">macOS CMD+Tab Generic Icon</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#future-enhancements">Future Enhancements</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#gui-improvements">GUI Improvements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#development-tools-integration">Development Tools Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#platform-support">Platform Support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-management">Configuration Management</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#completed-items">Completed Items</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contributing">Contributing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="source.html">Source code</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">new-python-github-project</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">TODO and Roadmap</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/hakonhagland/new-python-github-project/blob/main/docs/todo.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="todo-and-roadmap">
+<h1>TODO and Roadmap<a class="headerlink" href="#todo-and-roadmap" title="Link to this heading"></a></h1>
+<p>This document tracks known issues, planned enhancements, and future development goals for the New Python GitHub Project application.</p>
+<section id="known-issues">
+<h2>Known Issues<a class="headerlink" href="#known-issues" title="Link to this heading"></a></h2>
+<section id="macos-cmd-tab-generic-icon">
+<h3>macOS CMD+Tab Generic Icon<a class="headerlink" href="#macos-cmd-tab-generic-icon" title="Link to this heading"></a></h3>
+<p><strong>Status</strong>: Open</p>
+<p><strong>Description</strong>:
+On macOS, when using CMD+Tab to switch between applications, the New Python GitHub Project app displays a generic Python icon instead of the custom application icon.</p>
+<p><strong>Root Cause</strong>:
+This is a macOS limitation when running Python applications directly as scripts rather than as proper macOS application bundles (.app). The issue occurs because:</p>
+<ol class="arabic simple">
+<li><p><strong>Process Identity</strong>: macOS identifies the running process as the Python interpreter, not as the specific application</p></li>
+<li><p><strong>Bundle Structure</strong>: Python scripts lack the proper <code class="docutils literal notranslate"><span class="pre">.app</span></code> bundle structure that macOS uses for application metadata</p></li>
+<li><p><strong>Icon Association</strong>: The dock and CMD+Tab switcher rely on bundle information (<code class="docutils literal notranslate"><span class="pre">Info.plist</span></code>) to determine the correct icon</p></li>
+</ol>
+<p><strong>Current Behavior</strong>:
+- ✅ <strong>Menu bar</strong>: Shows correct name “New Python GitHub Project” (fixed via PyObjC)
+- ✅ <strong>Window icon</strong>: Shows correct custom icon
+- ❌ <strong>CMD+Tab</strong>: Shows generic Python icon
+- ❌ <strong>Dock</strong>: Shows generic Python icon when app is running</p>
+<p><strong>Potential Solutions</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>Application Bundling</strong> (Recommended)
+- Use tools like <code class="docutils literal notranslate"><span class="pre">py2app</span></code> or <code class="docutils literal notranslate"><span class="pre">briefcase</span></code> to create proper macOS app bundles
+- Provides native macOS integration with proper icon handling
+- <strong>Pros</strong>: Complete solution, professional distribution
+- <strong>Cons</strong>: Adds build complexity, larger distribution size</p></li>
+<li><p><strong>Runtime Bundle Modification</strong>
+- Dynamically modify the NSBundle at runtime to set more metadata
+- Extend current PyObjC solution beyond just CFBundleName
+- <strong>Pros</strong>: No build changes required
+- <strong>Cons</strong>: Limited effectiveness, may not work for dock integration</p></li>
+<li><p><strong>Custom Launcher Script</strong>
+- Create a native macOS launcher that spawns the Python application
+- Use AppleScript or native code to set proper application identity
+- <strong>Pros</strong>: Maintains current Python-based architecture
+- <strong>Cons</strong>: Complex implementation, potential maintenance overhead</p></li>
+</ol>
+<p><strong>Priority</strong>: Low (cosmetic issue, doesn’t affect functionality)</p>
+<p><strong>Related Files</strong>:
+- <code class="docutils literal notranslate"><span class="pre">src/new_python_github_project/helpers.py:545</span></code> (<code class="docutils literal notranslate"><span class="pre">_fix_macos_app_name</span></code> function)
+- <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> (PyObjC dependency configuration)</p>
+</section>
+</section>
+<section id="future-enhancements">
+<h2>Future Enhancements<a class="headerlink" href="#future-enhancements" title="Link to this heading"></a></h2>
+<section id="gui-improvements">
+<h3>GUI Improvements<a class="headerlink" href="#gui-improvements" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Theme Support</strong>
+- Add dark/light theme toggle
+- Respect system theme preferences
+- Custom color schemes</p></li>
+<li><p><strong>Window Management</strong>
+- Remember window size and position
+- Multiple project windows support
+- Tabbed interface for multiple projects</p></li>
+<li><p><strong>Progress Indicators</strong>
+- Real-time progress bars for long operations
+- Background task status
+- Cancel operation support</p></li>
+</ol>
+</section>
+<section id="development-tools-integration">
+<h3>Development Tools Integration<a class="headerlink" href="#development-tools-integration" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>IDE Integration</strong>
+- VS Code project setup templates
+- PyCharm configuration files
+- Sublime Text project files</p></li>
+<li><p><strong>CI/CD Templates</strong>
+- GitHub Actions workflow templates
+- GitLab CI configuration
+- Pre-commit hook templates</p></li>
+<li><p><strong>Documentation Generation</strong>
+- Auto-generate API documentation structure
+- README template customization
+- Sphinx configuration options</p></li>
+</ol>
+</section>
+<section id="platform-support">
+<h3>Platform Support<a class="headerlink" href="#platform-support" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Windows Improvements</strong>
+- Windows-specific icon handling verification
+- PowerShell script templates
+- Windows Subsystem for Linux (WSL) support</p></li>
+<li><p><strong>Linux Desktop Integration</strong>
+- .desktop file generation verification
+- Wayland compatibility testing
+- Flatpak/Snap package support</p></li>
+<li><p><strong>Cross-Platform Testing</strong>
+- Automated testing on all platforms
+- Virtual machine test environments
+- Container-based testing</p></li>
+</ol>
+</section>
+<section id="configuration-management">
+<h3>Configuration Management<a class="headerlink" href="#configuration-management" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Project Templates</strong>
+- Customizable project templates
+- Template marketplace/sharing
+- Version control for templates</p></li>
+<li><p><strong>Settings Profiles</strong>
+- Multiple configuration profiles
+- Import/export settings
+- Team configuration sharing</p></li>
+<li><p><strong>Plugin System</strong>
+- Plugin architecture design
+- Third-party extension support
+- API for custom integrations</p></li>
+</ol>
+</section>
+</section>
+<section id="completed-items">
+<h2>Completed Items<a class="headerlink" href="#completed-items" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>✅ <strong>macOS Menu Bar Name Fix</strong> (v0.1.0)</dt><dd><ul class="simple">
+<li><p>Fixed menu bar showing “python3” instead of application name</p></li>
+<li><p>Implemented PyObjC-based solution with CFBundleName modification</p></li>
+<li><p>Added proper environment inheritance for subprocess detachment</p></li>
+</ul>
+</dd>
+<dt>✅ <strong>Icon Loading System</strong> (v0.1.0)</dt><dd><ul class="simple">
+<li><p>Implemented hierarchical icon loading with fallback system</p></li>
+<li><p>Added cross-platform icon theme support</p></li>
+<li><p>Proper virtual environment icon path resolution</p></li>
+</ul>
+</dd>
+<dt>✅ <strong>Environment Isolation</strong> (v0.1.0)</dt><dd><ul class="simple">
+<li><p>Fixed subprocess environment inheritance issues</p></li>
+<li><p>Ensured virtual environment preservation in detached processes</p></li>
+<li><p>Added proper dependency management with uv</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="contributing">
+<h2>Contributing<a class="headerlink" href="#contributing" title="Link to this heading"></a></h2>
+<p>If you’d like to work on any of these items:</p>
+<ol class="arabic simple">
+<li><p>Check the <a class="reference external" href="https://github.com/hakonhagland/new-python-github-project/issues">GitHub Issues</a> for existing discussions</p></li>
+<li><p>Create a new issue to discuss your proposed changes</p></li>
+<li><p>Follow the development guidelines in the development documentation</p></li>
+<li><p>Submit a pull request with your implementation</p></li>
+</ol>
+<p>Priority levels:
+- <strong>High</strong>: Critical functionality, major bugs
+- <strong>Medium</strong>: Important features, minor bugs
+- <strong>Low</strong>: Nice-to-have features, cosmetic issues</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="debugging.html" class="btn btn-neutral float-left" title="Debugging the Daemonized Application" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="source.html" class="btn btn-neutral float-right" title="Source code" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Håkon Hægland.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
