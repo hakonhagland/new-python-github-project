@@ -24,17 +24,19 @@ The application follows a 3-area GUI layout:
 ## Development Commands
 
 ### Virtual Environment
+
+**Standard environments (Linux, macOS, Windows with proper setup):**
 Always activate the virtual environment before running commands:
 ```bash
 source .venv/bin/activate
 ```
 
-**For WSL/Linux environments**: When running Claude Code from WSL or Linux, you cannot use the Windows `.venv` directory because:
+**WSL-only exception**: When Claude Code runs in WSL while the user is on Windows (e.g., user uses PowerShell but Claude runs in WSL), you cannot use the Windows `.venv` directory because:
 - Windows virtual environments contain `.exe` files that cannot execute in Linux
 - The `uv.lock` file contains Windows-specific Python interpreter paths
 - Cross-platform path conflicts prevent proper tool execution
 
-Therefore, create a separate Linux virtual environment:
+In this specific WSL scenario, create a separate Linux virtual environment:
 
 ```bash
 # First-time WSL setup (install required system packages - run manually)
@@ -63,7 +65,10 @@ sudo usermod -aG docker $USER  # Logout/login required
 sudo apt install xvfb
 ```
 
-**Claude Code Instruction**: When detecting you're running in a WSL/Linux environment, always use `.venv-linux/bin/activate` instead of `.venv/bin/activate` for all development commands.
+**Claude Code Instruction**:
+- **Pure Linux/macOS environments**: Use `.venv/bin/activate`
+- **WSL with Windows user setup**: Use `.venv-linux/bin/activate`
+- **Windows environments**: Use `.venv/Scripts/activate` (PowerShell) or `.venv/bin/activate` (Git Bash)
 
 ### Common Commands
 ```bash
