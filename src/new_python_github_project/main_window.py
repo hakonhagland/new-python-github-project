@@ -527,8 +527,8 @@ class MainWindow(QMainWindow):
         self._set_window_icon()
 
         # Set default window size
-        default_width = 1250
-        default_height = 970
+        default_width = self.config.getint("MainWindow", "width")
+        default_height = self.config.getint("MainWindow", "height")
 
         # Get screen size and adjust window size if needed
         screen = QGuiApplication.primaryScreen()

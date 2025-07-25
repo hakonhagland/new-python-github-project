@@ -156,3 +156,20 @@ class Config:
         """Write the lockfile."""
         lockfile = self.get_lockfile_path()
         lockfile.write_text(str(os.getpid()))
+
+    # ConfigParser delegation methods
+    def get(self, section: str, option: str, **kwargs: typing.Any) -> str:
+        """Delegate to ConfigParser.get()."""
+        return self.config.get(section, option, **kwargs)
+
+    def getboolean(self, section: str, option: str, **kwargs: typing.Any) -> bool:
+        """Delegate to ConfigParser.getboolean()."""
+        return self.config.getboolean(section, option, **kwargs)
+
+    def getfloat(self, section: str, option: str, **kwargs: typing.Any) -> float:
+        """Delegate to ConfigParser.getfloat()."""
+        return self.config.getfloat(section, option, **kwargs)
+
+    def getint(self, section: str, option: str, **kwargs: typing.Any) -> int:
+        """Delegate to ConfigParser.getint()."""
+        return self.config.getint(section, option, **kwargs)
