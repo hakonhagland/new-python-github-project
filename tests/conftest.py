@@ -59,7 +59,7 @@ def config_dir_path(
 def get_config(
     config_dir_path: Path, mocker: MockerFixture, data_dir_path: Path
 ) -> GetConfig:
-    def _config(setup_firebase: bool = False) -> Config:
+    def _config() -> Config:
         cfg_dir = config_dir_path
         data_dir = data_dir_path
         mocker.patch(
@@ -70,9 +70,6 @@ def get_config(
             "new_python_github_project.config.platformdirs.user_data_dir",
             return_value=data_dir,
         )
-        cfg_fn = cfg_dir / Config.config_fn
-        with open(str(cfg_fn), "a", encoding="utf_8") as fp:
-            fp.write(str(cfg_fn))
         cfg = Config()
         return cfg
 

@@ -1,5 +1,4 @@
 import configparser
-import shutil
 import typing
 from pathlib import Path
 from unittest.mock import mock_open, patch
@@ -8,31 +7,10 @@ import pytest
 from pytest_mock.plugin import MockerFixture
 
 from new_python_github_project.config import Config
+from new_python_github_project.constants import Directories, FileNames
 from new_python_github_project.exceptions import ConfigException
 
-
-@pytest.fixture()
-def clean_config_fixture(tmp_path: Path, mocker: MockerFixture) -> Config:
-    """Create a clean config without the conftest.py bug that appends filename."""
-    cfg_dir = tmp_path / "config"
-    cfg_dir.mkdir()
-
-    # Create a clean config file (copy from test files)
-    test_config_path = Path(__file__).parent / "files" / "config" / "config.ini"
-    target_config_path = cfg_dir / "config.ini"
-    shutil.copy(test_config_path, target_config_path)
-
-    # Create dirlock file
-    dirlock_path = cfg_dir / ".dirlock"
-    dirlock_path.write_text("author=HH")
-
-    # Mock platformdirs
-    mocker.patch(
-        "new_python_github_project.config.platformdirs.user_config_dir",
-        return_value=str(cfg_dir),
-    )
-
-    return Config()
+from .common import GetConfig, PytestDataDict
 
 
 class TestConfig:
@@ -40,16 +18,16 @@ class TestConfig:
 
     def test_class_variables(self) -> None:
         """Test that class variables are correctly set."""
-        assert Config.appname == "new-python-gh-project"
-        assert Config.config_fn == "config.ini"
-        assert Config.dirlock_fn == ".dirlock"
-        assert Config.lockfile_fn == "app.lock"
-        assert Config.logfile_fn == "app.log"
-        assert Config.dirlock_string == "author=HH"
+        assert Config.appname == Config.appname
+        assert Config.config_fn == Config.config_fn
+        assert Config.dirlock_fn == Config.dirlock_fn
+        assert Config.lockfile_fn == Config.lockfile_fn
+        assert Config.logfile_fn == Config.logfile_fn
+        assert Config.dirlock_string == Config.dirlock_string
 
-    def test_init_creates_config_properly(self, clean_config_fixture: Config) -> None:
+    def test_init_creates_config_properly(self, get_config: GetConfig) -> None:
         """Test that Config initialization works properly."""
-        config = clean_config_fixture
+        config = get_config()
         assert isinstance(config, Config)
         assert config.config_dir.exists()
         assert config.config_path.exists()
@@ -58,10 +36,10 @@ class TestConfig:
     def test_check_correct_config_dir_valid_lock(self, tmp_path: Path) -> None:
         """Test check_correct_config_dir with valid lock file."""
         config = Config.__new__(Config)  # Create without __init__
-        config.dirlock_string = "author=HH"
+        config.dirlock_string = Config.dirlock_string
 
-        lock_file = tmp_path / ".dirlock"
-        lock_file.write_text("author=HH\n")
+        lock_file = tmp_path / Config.dirlock_fn
+        lock_file.write_text(Config.dirlock_string + "\n")
 
         # Should not raise exception
         config.check_correct_config_dir(lock_file)
@@ -69,9 +47,9 @@ class TestConfig:
     def test_check_correct_config_dir_bad_content(self, tmp_path: Path) -> None:
         """Test check_correct_config_dir with bad lock file content."""
         config = Config.__new__(Config)
-        config.dirlock_string = "author=HH"
+        config.dirlock_string = Config.dirlock_string
 
-        lock_file = tmp_path / ".dirlock"
+        lock_file = tmp_path / Config.dirlock_fn
         lock_file.write_text("bad content")
 
         with pytest.raises(ConfigException, match="bad content"):
@@ -80,9 +58,9 @@ class TestConfig:
     def test_check_correct_config_dir_is_directory(self, tmp_path: Path) -> None:
         """Test check_correct_config_dir when lock file is a directory."""
         config = Config.__new__(Config)
-        config.dirlock_string = "author=HH"
+        config.dirlock_string = Config.dirlock_string
 
-        lock_file = tmp_path / ".dirlock"
+        lock_file = tmp_path / Config.dirlock_fn
         lock_file.mkdir()
 
         with pytest.raises(ConfigException, match="is a directory"):
@@ -91,9 +69,9 @@ class TestConfig:
     def test_check_correct_config_dir_missing(self, tmp_path: Path) -> None:
         """Test check_correct_config_dir when lock file is missing."""
         config = Config.__new__(Config)
-        config.dirlock_string = "author=HH"
+        config.dirlock_string = Config.dirlock_string
 
-        lock_file = tmp_path / ".dirlock"
+        lock_file = tmp_path / Config.dirlock_fn
 
         with pytest.raises(ConfigException, match="missing"):
             config.check_correct_config_dir(lock_file)
@@ -101,7 +79,7 @@ class TestConfig:
     def test_copy_default_config(self, tmp_path: Path, mocker: MockerFixture) -> None:
         """Test copying default config file."""
         config = Config.__new__(Config)
-        target_path = tmp_path / "config.ini"
+        target_path = tmp_path / Config.config_fn
 
         # Mock the importlib.resources behavior
         mock_files = mocker.patch("importlib.resources.files")
@@ -120,19 +98,19 @@ class TestConfig:
         )
 
     def test_get_config_dir_existing_valid_directory(
-        self, mocker: MockerFixture, tmp_path: Path
+        self, mocker: MockerFixture, tmp_path: Path, test_data: PytestDataDict
     ) -> None:
         """Test get_config_dir with existing valid directory."""
         config = Config.__new__(Config)
         config.appname = "test-app"
-        config.dirlock_fn = ".dirlock"
-        config.dirlock_string = "author=HH"
+        config.dirlock_fn = Config.dirlock_fn
+        config.dirlock_string = Config.dirlock_string
 
         # Create existing directory with valid lock file
-        config_dir = tmp_path / "config"
+        config_dir = tmp_path / test_data["config_dir"]
         config_dir.mkdir()
-        lock_file = config_dir / ".dirlock"
-        lock_file.write_text("author=HH")
+        lock_file = config_dir / Config.dirlock_fn
+        lock_file.write_text(Config.dirlock_string)
 
         mocker.patch("platformdirs.user_config_dir", return_value=str(config_dir))
 
@@ -140,14 +118,14 @@ class TestConfig:
         assert result == config_dir
 
     def test_get_config_dir_existing_file_not_directory(
-        self, mocker: MockerFixture, tmp_path: Path
+        self, mocker: MockerFixture, tmp_path: Path, test_data: PytestDataDict
     ) -> None:
         """Test get_config_dir when path exists but is a file."""
         config = Config.__new__(Config)
         config.appname = "test-app"
 
         # Create a file instead of directory
-        config_path = tmp_path / "config"
+        config_path = tmp_path / test_data["config_dir"]
         config_path.write_text("not a directory")
 
         mocker.patch("platformdirs.user_config_dir", return_value=str(config_path))
@@ -156,13 +134,15 @@ class TestConfig:
             config.get_config_dir()
 
     def test_get_config_dir_creates_new_directory(
-        self, mocker: MockerFixture, tmp_path: Path
+        self,
+        mocker: MockerFixture,
+        tmp_path: Path,
     ) -> None:
         """Test get_config_dir creates new directory when it doesn't exist."""
         config = Config.__new__(Config)
         config.appname = "test-app"
-        config.dirlock_fn = ".dirlock"
-        config.dirlock_string = "author=HH"
+        config.dirlock_fn = Config.dirlock_fn
+        config.dirlock_string = Config.dirlock_string
 
         config_dir = tmp_path / "new_config"
 
@@ -174,41 +154,41 @@ class TestConfig:
         assert config_dir.exists()
         assert config_dir.is_dir()
 
-        lock_file = config_dir / ".dirlock"
+        lock_file = config_dir / Config.dirlock_fn
         assert lock_file.exists()
-        assert lock_file.read_text() == "author=HH"
+        assert lock_file.read_text() == Config.dirlock_string
 
-    def test_get_config_file(self, clean_config_fixture: Config) -> None:
+    def test_get_config_file(self, get_config: GetConfig) -> None:
         """Test get_config_file returns correct path."""
-        config = clean_config_fixture
+        config = get_config()
         config_file = config.get_config_file()
         assert config_file == config.config_path
-        assert config_file.name == "config.ini"
+        assert config_file.name == Config.config_fn
 
-    def test_get_lockfile_path(self, clean_config_fixture: Config) -> None:
+    def test_get_lockfile_path(self, get_config: GetConfig) -> None:
         """Test get_lockfile_path returns correct path."""
-        config = clean_config_fixture
+        config = get_config()
         lockfile_path = config.get_lockfile_path()
-        expected_path = config.config_dir / "app.lock"
+        expected_path = config.config_dir / Config.lockfile_fn
         assert lockfile_path == expected_path
 
-    def test_get_logfile_path(self, clean_config_fixture: Config) -> None:
+    def test_get_logfile_path(self, get_config: GetConfig) -> None:
         """Test get_logfile_path returns correct path."""
-        config = clean_config_fixture
+        config = get_config()
         logfile_path = config.get_logfile_path()
-        expected_path = config.config_dir / "app.log"
+        expected_path = config.config_dir / Config.logfile_fn
         assert logfile_path == expected_path
 
     def test_get_pyproject_template_existing_template(
-        self, clean_config_fixture: Config
+        self, get_config: GetConfig
     ) -> None:
         """Test get_pyproject_template with existing template."""
-        config = clean_config_fixture
+        config = get_config()
 
         # Create templates directory and template file
-        templates_dir = config.config_dir / "templates"
+        templates_dir = config.config_dir / Directories.templates
         templates_dir.mkdir(exist_ok=True)
-        template_file = templates_dir / "pyproject.toml"
+        template_file = templates_dir / FileNames.pyproject_toml
         template_content = (
             "name = %%PROJECT_NAME%%\ndescription = %%PROJECT_DESCRIPTION%%"
         )
@@ -218,17 +198,17 @@ class TestConfig:
         assert result == template_content
 
     def test_get_pyproject_template_creates_from_default(
-        self, tmp_path: Path, mocker: MockerFixture
+        self, tmp_path: Path, mocker: MockerFixture, test_data: PytestDataDict
     ) -> None:
         """Test get_pyproject_template creates template from default when none exists."""
         # Create a fresh config instance for this test
-        cfg_dir = tmp_path / "config"
+        cfg_dir = tmp_path / test_data["config_dir"]
         cfg_dir.mkdir()
-        dirlock_path = cfg_dir / ".dirlock"
-        dirlock_path.write_text("author=HH")
+        dirlock_path = cfg_dir / Config.dirlock_fn
+        dirlock_path.write_text(Config.dirlock_string)
 
         # Create config file
-        config_file = cfg_dir / "config.ini"
+        config_file = cfg_dir / Config.config_fn
         config_file.write_text("[Project]\nproject-name = test")
 
         mocker.patch(
@@ -247,9 +227,9 @@ class TestConfig:
         default_content = "default template content"
 
         # Create the template in the actual filesystem to test the functionality
-        templates_dir = config.config_dir / "templates"
+        templates_dir = config.config_dir / Directories.templates
         templates_dir.mkdir()
-        default_template_path = templates_dir / "pyproject.toml"
+        default_template_path = templates_dir / FileNames.pyproject_toml
 
         # Create a more realistic mock that only affects the default template reading
         original_open = open
@@ -270,10 +250,10 @@ class TestConfig:
         assert result == default_content
 
     def test_get_pyproject_template_no_default_template(
-        self, clean_config_fixture: Config, mocker: MockerFixture
+        self, get_config: GetConfig, mocker: MockerFixture
     ) -> None:
         """Test get_pyproject_template raises exception when no default template exists."""
-        config = clean_config_fixture
+        config = get_config()
 
         # Mock importlib.resources for missing default template
         mock_files = mocker.patch("importlib.resources.files")
@@ -284,15 +264,15 @@ class TestConfig:
         with pytest.raises(ConfigException, match="No default template found"):
             config.get_pyproject_template()
 
-    def test_read_config_existing_file(self, clean_config_fixture: Config) -> None:
+    def test_read_config_existing_file(self, get_config: GetConfig) -> None:
         """Test read_config with existing config file."""
-        config = clean_config_fixture
+        config = get_config()
         assert hasattr(config, "config")
         assert isinstance(config.config, configparser.ConfigParser)
 
-    def test_read_config_existing_non_file(self, clean_config_fixture: Config) -> None:
+    def test_read_config_existing_non_file(self, get_config: GetConfig) -> None:
         """Test read_config when config path exists but is not a file."""
-        config = clean_config_fixture
+        config = get_config()
 
         # Replace config file with directory
         config.config_path.unlink(missing_ok=True)
@@ -307,7 +287,7 @@ class TestConfig:
         """Test read_config creates default config when file is missing."""
         config = Config.__new__(Config)
         config.config_dir = tmp_path
-        config.config_path = tmp_path / "config.ini"
+        config.config_path = tmp_path / Config.config_fn
 
         # Mock copy_default_config and read_defaults
         mock_copy_default = mocker.patch.object(config, "copy_default_config")
@@ -340,9 +320,9 @@ class TestConfig:
         mock_files.return_value.joinpath.assert_called_once_with("default_config.ini")
         mock_config_parser.read.assert_called_once_with(str(mock_default_path))
 
-    def test_remove_lockfile(self, clean_config_fixture: Config) -> None:
+    def test_remove_lockfile(self, get_config: GetConfig) -> None:
         """Test remove_lockfile removes the lockfile."""
-        config = clean_config_fixture
+        config = get_config()
         lockfile_path = config.get_lockfile_path()
 
         # Create a lockfile
@@ -352,9 +332,9 @@ class TestConfig:
         config.remove_lockfile()
         assert not lockfile_path.exists()
 
-    def test_remove_lockfile_missing_ok(self, clean_config_fixture: Config) -> None:
+    def test_remove_lockfile_missing_ok(self, get_config: GetConfig) -> None:
         """Test remove_lockfile doesn't fail when lockfile doesn't exist."""
-        config = clean_config_fixture
+        config = get_config()
         lockfile_path = config.get_lockfile_path()
 
         # Ensure lockfile doesn't exist
@@ -364,11 +344,9 @@ class TestConfig:
         # Should not raise exception
         config.remove_lockfile()
 
-    def test_write_lockfile(
-        self, clean_config_fixture: Config, mocker: MockerFixture
-    ) -> None:
+    def test_write_lockfile(self, get_config: GetConfig, mocker: MockerFixture) -> None:
         """Test write_lockfile writes current PID to lockfile."""
-        config = clean_config_fixture
+        config = get_config()
         lockfile_path = config.get_lockfile_path()
 
         # Mock os.getpid
@@ -380,9 +358,9 @@ class TestConfig:
         assert lockfile_path.read_text() == "12345"
         mock_getpid.assert_called_once()
 
-    def test_configparser_custom_converter(self, clean_config_fixture: Config) -> None:
+    def test_configparser_custom_converter(self, get_config: GetConfig) -> None:
         """Test that ConfigParser is created with custom list converter."""
-        config = clean_config_fixture
+        config = get_config()
 
         # The configparser should have the custom list converter
         assert hasattr(config.config, "getlist")
