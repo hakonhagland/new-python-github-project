@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QIcon, QGuiApplication
 
 from new_python_github_project.config import Config
+from new_python_github_project.constants import Directories, FileNames
 from new_python_github_project.exceptions import ConfigException
 
 if platform.system() == "Windows":
@@ -533,6 +534,7 @@ def _load_icons(app: QApplication, config: Config) -> None:
     if platform.system() == "Windows":
         icon = _load_windows_icon()
         app.setWindowIcon(icon)
+        logging.info(f"Loaded Windows icon: {icon}")
         return
 
     # Set up icon theme and load icon for Linux/macOS
@@ -547,7 +549,10 @@ def _load_icons(app: QApplication, config: Config) -> None:
         QIcon.setThemeSearchPaths([str(icons_root)])  # pyright: ignore
         icon = QIcon.fromTheme(config.appname)
         if icon.isNull():
+            logging.warning("Could not load icon from theme. Using fallback icon.")
             icon = QIcon.fromTheme("applications-python")
+        else:
+            logging.info(f"Loaded icon from theme: {icon}")
 
     # Set window icon on all platforms
     app.setWindowIcon(icon)
@@ -574,14 +579,17 @@ def _load_windows_icon() -> QIcon:
     # Try hicolor icons in order of preference for Windows
     hicolor_paths = [
         hicolor_dir
-        / "512x512"
-        / "apps"
-        / "new-python-gh-project.png",  # Best for Windows
-        hicolor_dir / "256x256" / "apps" / "new-python-gh-project.png",  # Good fallback
+        / Directories.icon_512x512
+        / Directories.icon_app_dir
+        / FileNames.icon_png,  # Best for Windows
         hicolor_dir
-        / "48x48"
-        / "apps"
-        / "new-python-gh-project.png",  # Smaller fallback
+        / Directories.icon_256x256
+        / Directories.icon_app_dir
+        / FileNames.icon_png,  # Good fallback
+        hicolor_dir
+        / Directories.icon_48x48
+        / Directories.icon_app_dir
+        / FileNames.icon_png,  # Smaller fallback
     ]
 
     # Create icon with multiple sizes for best Windows display
