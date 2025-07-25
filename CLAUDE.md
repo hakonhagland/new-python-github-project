@@ -183,6 +183,7 @@ Follow the Python style guide in `.cursor/rules/python.mdc`:
 - Use `ruff` for formatting/linting and `mypy` for type checking
 - Import order: standard library → third-party → local (alphabetically sorted)
 - Functions/methods organized alphabetically within their scope
+- **Module imports**: Prefer `from package import module` over `from package.module import function` for better readability and explicit provenance (e.g., `from new_python_github_project import helpers` then use `helpers.function()` instead of importing `function` directly)
 
 ## Mypy
 

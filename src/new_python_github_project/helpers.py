@@ -490,9 +490,14 @@ def _load_windows_icon() -> QIcon:
     :returns: QIcon object for Windows
     :rtype: QIcon
     """
-    # First try the proper hicolor icons directory
-    project_root = Path(__file__).parent.parent.parent
-    hicolor_dir = project_root / "icons" / "hicolor"
+    # Use the proper hicolor icons directory location
+    hicolor_dir = locate_hicolor_icons()
+
+    if hicolor_dir is None:
+        logging.warning(
+            "Could not locate hicolor icons directory for Windows. Using theme fallback."
+        )
+        return QIcon.fromTheme("applications-python")
 
     # Try hicolor icons in order of preference for Windows
     hicolor_paths = [
@@ -540,7 +545,7 @@ def _load_icons(app: QApplication, config: Config) -> None:
     # Set up icon theme and load icon for Linux/macOS
     QIcon.setThemeName("hicolor")
     QIcon.setFallbackThemeName("hicolor")  # fallback if theme not found
-    icons_root = _locate_hicolor_icons()
+    icons_root = locate_hicolor_icons()
     if icons_root is None:
         logging.warning("Could not locate hicolor icons. Using fallback icon.")
         icon = QIcon.fromTheme("applications-python")
@@ -586,7 +591,7 @@ def _fix_macos_app_name() -> None:
         logging.error(f"Error in _fix_macos_app_name(): {e}")
 
 
-def _locate_hicolor_icons() -> Path | None:
+def locate_hicolor_icons() -> Path | None:
     # Where pip placed the shared‑data files
     data_root = Path(sysconfig.get_paths()["data"]) / "share" / "icons" / "hicolor"
     if data_root.is_dir():

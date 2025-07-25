@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 import platform
 from typing import cast, List, Optional
 
@@ -30,6 +29,7 @@ from PyQt6.QtWidgets import QApplication
 from new_python_github_project.config import Config
 from new_python_github_project.task import Task, TaskItemWidget
 from new_python_github_project.logging_handlers import setup_post_fork_logging
+from new_python_github_project import helpers
 
 
 class TaskListFrame(QFrame):
@@ -599,9 +599,14 @@ class MainWindow(QMainWindow):
         """
 
         if platform.system() == "Windows":
-            # Use direct file loading for Windows - try hicolor icons first
-            project_root = Path(__file__).parent.parent.parent
-            hicolor_dir = project_root / "icons" / "hicolor"
+            # Use the proper hicolor icons directory location
+            hicolor_dir = helpers.locate_hicolor_icons()
+
+            if hicolor_dir is None:
+                logging.warning(
+                    "Could not locate hicolor icons directory for Windows window"
+                )
+                return
 
             # Try hicolor icons first (proper application icons)
             hicolor_paths = [
