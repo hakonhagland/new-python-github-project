@@ -184,6 +184,7 @@ Follow the Python style guide in `.cursor/rules/python.mdc`:
 - Import order: standard library → third-party → local (alphabetically sorted)
 - Functions/methods organized alphabetically within their scope
 - **Module imports**: Prefer `from package import module` over `from package.module import function` for better readability and explicit provenance (e.g., `from new_python_github_project import helpers` then use `helpers.function()` instead of importing `function` directly)
+- **Function organization**: Organize functions with public functions first (no underscore prefix), followed by private functions (underscore prefix), each section alphabetically sorted and clearly separated with comment blocks (e.g., `# Public functions` and `# Private functions`)
 
 ## Mypy
 
