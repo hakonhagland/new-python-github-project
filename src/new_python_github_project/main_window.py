@@ -520,10 +520,11 @@ class MainWindow(QMainWindow):
         """
         self.setWindowTitle("Python Project Creator")
 
-        # Set window class for desktop integration
-        self.setObjectName("Python Project Creator")
+        # Set window object name for advanced uses: allows targeted styling via Qt Style Sheets (QSS),
+        #   enables widget lookup (findChild), supports automated GUI testing, and aids debugging
+        self.setObjectName("QMainWindow")
 
-        # Set window icon explicitly for better Windows compatibility
+        # Set window icon explicitly. TODO: check if this is needed on Linux/macOS. It is on Windows.
         self._set_window_icon()
 
         # Set default window size
