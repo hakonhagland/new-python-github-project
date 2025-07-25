@@ -1,3 +1,8 @@
+import logging
+from pathlib import Path
+import platform
+from typing import cast, List, Optional
+
 from PyQt6.QtWidgets import (
     QFrame,
     QVBoxLayout,
@@ -21,8 +26,6 @@ from PyQt6.QtGui import (
     QIcon,
 )
 from PyQt6.QtWidgets import QApplication
-from typing import cast, List, Optional
-import logging
 
 from new_python_github_project.config import Config
 from new_python_github_project.task import Task, TaskItemWidget
@@ -594,8 +597,6 @@ class MainWindow(QMainWindow):
         especially important on Windows where the application-level icon may not
         always be properly displayed in the taskbar and window title bar.
         """
-        import platform
-        from pathlib import Path
 
         if platform.system() == "Windows":
             # Use direct file loading for Windows - try hicolor icons first
@@ -618,22 +619,6 @@ class MainWindow(QMainWindow):
                     icon.addFile(str(icon_path))
                     logging.info(f"Added window hicolor icon: {icon_path}")
                     found_icon = True
-
-            # Fallback to data directory if hicolor not found
-            if not found_icon:
-                icon_dir = Path(__file__).parent / "data"
-                data_paths = [
-                    icon_dir / "icon-256.png",
-                    icon_dir / "icon-128.png",
-                    icon_dir / "icon.png",
-                    icon_dir / "icon.svg",
-                ]
-
-                for icon_path in data_paths:
-                    if icon_path.exists():
-                        icon.addFile(str(icon_path))
-                        logging.info(f"Added window fallback icon: {icon_path}")
-                        found_icon = True
 
             if found_icon and not icon.isNull():
                 self.setWindowIcon(icon)

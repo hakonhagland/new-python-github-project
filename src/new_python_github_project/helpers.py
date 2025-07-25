@@ -8,7 +8,7 @@ import sysconfig
 import subprocess
 
 import click
-from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QApplication
+from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QIcon, QGuiApplication
 
 from new_python_github_project.config import Config
@@ -168,8 +168,6 @@ def create_qapplication(config: Config) -> QApplication:
     if platform.system() == "Darwin":
         _fix_macos_app_name()
 
-    # TODO: The app does not need a tray icon yet, but it is possible to add it back later
-    #  _add_app_to_tray(app, config)
     app.aboutToQuit.connect(config.remove_lockfile)
     return app
 
@@ -483,49 +481,6 @@ def setup_remote_debugging(host: str = "localhost", port: int = 5678) -> None:
 # -----------------------------------------------------
 
 
-def _add_app_to_tray(app: QApplication, config: Config) -> None:
-    """Add the application to the system tray."""
-
-    # Use custom icon for tray if available, fallback to theme icon
-    icon_dir = Path(__file__).parent / "data"
-    icon_256_path = icon_dir / "icon-256.png"
-    icon_128_path = icon_dir / "icon-128.png"
-    png_icon_path = icon_dir / "icon.png"
-    svg_icon_path = icon_dir / "icon.svg"
-
-    if icon_256_path.exists():
-        tray_icon = QSystemTrayIcon(QIcon(str(icon_256_path)), parent=app)
-    elif icon_128_path.exists():
-        tray_icon = QSystemTrayIcon(QIcon(str(icon_128_path)), parent=app)
-    elif png_icon_path.exists():
-        tray_icon = QSystemTrayIcon(QIcon(str(png_icon_path)), parent=app)
-    elif svg_icon_path.exists():
-        tray_icon = QSystemTrayIcon(QIcon(str(svg_icon_path)), parent=app)
-    else:
-        tray_icon = QSystemTrayIcon(QIcon.fromTheme("applications-python"), parent=app)
-
-    tray_menu = QMenu()
-    show_action = tray_menu.addAction("Show")
-    quit_action = tray_menu.addAction("Quit")
-    tray_icon.setContextMenu(tray_menu)
-    tray_icon.setToolTip("Python Project Creator")
-    tray_icon.show()
-
-    def on_quit() -> None:
-        config.remove_lockfile()
-        app.quit()
-
-    if quit_action is not None:
-        quit_action.triggered.connect(on_quit)
-
-    def on_show() -> None:
-        # Placeholder: bring main window to front if implemented
-        pass
-
-    if show_action is not None:
-        show_action.triggered.connect(on_show)
-
-
 def _load_windows_icon() -> QIcon:
     """Load icon specifically for Windows platform.
 
@@ -562,22 +517,6 @@ def _load_windows_icon() -> QIcon:
             logging.info(f"Loading Windows hicolor icon: {icon_path}")
             icon.addFile(str(icon_path))
             found_icon = True
-
-    # Fallback to data directory icons if hicolor not found
-    if not found_icon:
-        icon_dir = Path(__file__).parent / "data"
-        data_paths = [
-            icon_dir / "icon-256.png",
-            icon_dir / "icon-128.png",
-            icon_dir / "icon.png",
-            icon_dir / "icon.svg",
-        ]
-
-        for icon_path in data_paths:
-            if icon_path.exists():
-                logging.info(f"Loading Windows fallback icon: {icon_path}")
-                icon.addFile(str(icon_path))
-                found_icon = True
 
     if not found_icon:
         logging.warning("No custom icons found for Windows. Using theme fallback.")
