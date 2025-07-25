@@ -77,7 +77,7 @@ pytest tests/
 make test
 
 # Type checking
-mypy --strict src/ tests/
+mypy src/ tests/
 make mypy
 
 # Linting and formatting
