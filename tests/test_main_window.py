@@ -25,8 +25,8 @@ class TestMainWindow:
             "new_python_github_project.main_window.logging_handlers.setup_post_fork_logging"
         )
 
-        # Mock the setup_ui method to isolate constructor testing
-        mock_setup_ui = mocker.patch.object(MainWindow, "setup_ui")
+        # Mock the _setup_ui method to isolate constructor testing
+        mock_setup_ui = mocker.patch.object(MainWindow, "_setup_ui")
 
         # Get test configuration
         config = get_config()
@@ -63,8 +63,8 @@ class TestMainWindow:
         # Mock the _set_window_icon method to avoid icon-related side effects
         mock_set_icon = mocker.patch.object(MainWindow, "_set_window_icon")
 
-        # Mock the setup_menu method to isolate UI layout testing
-        mock_setup_menu = mocker.patch.object(MainWindow, "setup_menu")
+        # Mock the _setup_menu method to isolate UI layout testing
+        mock_setup_menu = mocker.patch.object(MainWindow, "_setup_menu")
 
         # Mock QGuiApplication.primaryScreen() to control screen size
         mock_screen = mocker.MagicMock()

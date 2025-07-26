@@ -502,39 +502,67 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.app = app
         self.config = config
-        self.setup_ui()
+        self._setup_ui()
 
         # Setup post-fork logging to replay buffered messages and route future logs to GUI
         logging_handlers.setup_post_fork_logging(self)
 
-    def setup_ui(self) -> None:
-        """Setup the main window UI components.
+    # -----------------
+    # Public methods
+    # -----------------
 
-        Creates the main window layout with three vertical areas, configures
-        window sizing based on screen dimensions, centers the window, and
-        initializes all UI components including menu bar, task list, action
-        buttons, and terminal output.
+    def add_log_message(self, message: str) -> None:
+        """Add a log message to the terminal output.
 
-        The window size is automatically adjusted if the default size exceeds
-        the available screen space, with a 50-pixel margin maintained.
+        Convenience method that forwards log messages to the terminal frame.
+        This allows other components to easily add messages to the terminal
+        through the main window.
+
+        :param message: The message to add to the terminal
+        :type message: str
+
+        .. seealso::
+           :meth:`TerminalFrame.add_log_message` for the actual implementation
         """
-        # Basic window properties
-        self.setWindowTitle("Python Project Creator")
-        self.setObjectName("QMainWindow")
-        self._set_window_icon()
+        self.terminal_frame.add_log_message(message)
 
-        # Configure window size and position
-        self._configure_window_size_and_position()
+    def closeEvent(self, event: Optional[QCloseEvent]) -> None:
+        """Handle window close events.
 
-        # Setup menu bar
-        self.setup_menu()
+        When the user closes the window with the X button, this ensures
+        the application properly quits so the lockfile is cleaned up.
 
-        # Setup layout and UI components
-        layout = self._setup_layout()
-        self._create_ui_components(layout)
+        :param event: The close event
+        :type event: QCloseEvent
+        """
+        logging.info("Window close requested")
+        if event is not None:
+            event.accept()
+        self.app.quit()
 
-        # Log the window size information
-        self._log_window_size_info()
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Handle window resize events.
+
+        Logs the new window dimensions to the terminal when the user
+        resizes the window. This provides feedback about the current
+        window state.
+
+        :param event: The resize event containing new dimensions
+        :type event: QResizeEvent
+
+        .. note::
+           This method overrides the base class resize event handler
+           and calls the parent implementation before logging.
+        """
+        super().resizeEvent(event)
+        if event is not None:
+            width = event.size().width()
+            height = event.size().height()
+            logging.info(f"Window resized to: {width}x{height} pixels")
+
+    # -----------------
+    # Private methods
+    # -----------------
 
     def _configure_window_size_and_position(self) -> tuple[int, int]:
         """Configure window size and position based on screen dimensions.
@@ -600,26 +628,6 @@ class MainWindow(QMainWindow):
         # Store reference to terminal for other components
         self.terminal = self.terminal_frame.terminal
 
-    def _setup_layout(self) -> QVBoxLayout:
-        """Setup the central widget and main layout.
-
-        Creates the central widget, sets it on the main window, and creates
-        the main vertical layout with appropriate margins and spacing.
-
-        :returns: The main vertical layout for adding components
-        :rtype: QVBoxLayout
-        """
-        # Central widget
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-
-        # Main layout
-        layout = QVBoxLayout(central_widget)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(10)
-
-        return layout
-
     def _log_window_size_info(self) -> None:
         """Log window size information for debugging and user feedback.
 
@@ -656,7 +664,27 @@ class MainWindow(QMainWindow):
             self.setWindowIcon(fallback_icon)
             logging.info("Window icon set to fallback theme icon")
 
-    def setup_menu(self) -> None:
+    def _setup_layout(self) -> QVBoxLayout:
+        """Setup the central widget and main layout.
+
+        Creates the central widget, sets it on the main window, and creates
+        the main vertical layout with appropriate margins and spacing.
+
+        :returns: The main vertical layout for adding components
+        :rtype: QVBoxLayout
+        """
+        # Central widget
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        # Main layout
+        layout = QVBoxLayout(central_widget)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+
+        return layout
+
+    def _setup_menu(self) -> None:
         """Setup the menu bar with file operations.
 
         Creates a File menu with a Quit action (Ctrl+Q shortcut).
@@ -674,51 +702,31 @@ class MainWindow(QMainWindow):
                 quit_action.triggered.connect(self.close)
                 file_menu.addAction(quit_action)
 
-    def add_log_message(self, message: str) -> None:
-        """Add a log message to the terminal output.
+    def _setup_ui(self) -> None:
+        """Setup the main window UI components.
 
-        Convenience method that forwards log messages to the terminal frame.
-        This allows other components to easily add messages to the terminal
-        through the main window.
+        Creates the main window layout with three vertical areas, configures
+        window sizing based on screen dimensions, centers the window, and
+        initializes all UI components including menu bar, task list, action
+        buttons, and terminal output.
 
-        :param message: The message to add to the terminal
-        :type message: str
-
-        .. seealso::
-           :meth:`TerminalFrame.add_log_message` for the actual implementation
+        The window size is automatically adjusted if the default size exceeds
+        the available screen space, with a 50-pixel margin maintained.
         """
-        self.terminal_frame.add_log_message(message)
+        # Basic window properties
+        self.setWindowTitle("Python Project Creator")
+        self.setObjectName("QMainWindow")
+        self._set_window_icon()
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-        """Handle window resize events.
+        # Configure window size and position
+        self._configure_window_size_and_position()
 
-        Logs the new window dimensions to the terminal when the user
-        resizes the window. This provides feedback about the current
-        window state.
+        # Setup menu bar
+        self._setup_menu()
 
-        :param event: The resize event containing new dimensions
-        :type event: QResizeEvent
+        # Setup layout and UI components
+        layout = self._setup_layout()
+        self._create_ui_components(layout)
 
-        .. note::
-           This method overrides the base class resize event handler
-           and calls the parent implementation before logging.
-        """
-        super().resizeEvent(event)
-        if event is not None:
-            width = event.size().width()
-            height = event.size().height()
-            logging.info(f"Window resized to: {width}x{height} pixels")
-
-    def closeEvent(self, event: Optional[QCloseEvent]) -> None:
-        """Handle window close events.
-
-        When the user closes the window with the X button, this ensures
-        the application properly quits so the lockfile is cleaned up.
-
-        :param event: The close event
-        :type event: QCloseEvent
-        """
-        logging.info("Window close requested")
-        if event is not None:
-            event.accept()
-        self.app.quit()
+        # Log the window size information
+        self._log_window_size_info()

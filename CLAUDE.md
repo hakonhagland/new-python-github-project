@@ -191,6 +191,7 @@ Follow the Python style guide in `.cursor/rules/python.mdc`:
 - Functions/methods organized alphabetically within their scope
 - **Module imports**: Prefer `from package import module` over `from package.module import function` for better readability and explicit provenance (e.g., `from new_python_github_project import helpers` then use `helpers.function()` instead of importing `function` directly)
 - **Function organization**: Organize functions with public functions first (no underscore prefix), followed by private functions (underscore prefix), each section alphabetically sorted and clearly separated with comment blocks (e.g., `# Public functions` and `# Private functions`)
+- **Class method organization**: Apply the same organization principle to class methods - organize with public methods first, followed by private methods (underscore prefix), each section alphabetically sorted and clearly separated with comment blocks (e.g., `# Public methods` and `# Private methods`). This provides predictable structure regardless of class size and makes method lookup efficient.
 
 ## Mypy
 
