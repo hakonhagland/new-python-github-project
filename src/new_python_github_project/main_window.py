@@ -518,15 +518,33 @@ class MainWindow(QMainWindow):
         The window size is automatically adjusted if the default size exceeds
         the available screen space, with a 50-pixel margin maintained.
         """
+        # Basic window properties
         self.setWindowTitle("Python Project Creator")
-
-        # Set window object name for advanced uses: allows targeted styling via Qt Style Sheets (QSS),
-        #   enables widget lookup (findChild), supports automated GUI testing, and aids debugging
         self.setObjectName("QMainWindow")
-
-        # Set window icon explicitly. TODO: check if this is needed on Linux/macOS. It is on Windows.
         self._set_window_icon()
 
+        # Configure window size and position
+        self._configure_window_size_and_position()
+
+        # Setup menu bar
+        self.setup_menu()
+
+        # Setup layout and UI components
+        layout = self._setup_layout()
+        self._create_ui_components(layout)
+
+        # Log the window size information
+        self._log_window_size_info()
+
+    def _configure_window_size_and_position(self) -> tuple[int, int]:
+        """Configure window size and position based on screen dimensions.
+
+        Reads default window size from config, detects screen size, adjusts
+        window size if needed to fit screen with margin, and centers the window.
+
+        :returns: Tuple of (default_width, default_height) from config
+        :rtype: tuple[int, int]
+        """
         # Set default window size
         default_width = self.config.getint("MainWindow", "width")
         default_height = self.config.getint("MainWindow", "height")
@@ -556,18 +574,17 @@ class MainWindow(QMainWindow):
 
         self.setGeometry(x, y, self.window_width, self.window_height)
 
-        # Setup menu bar
-        self.setup_menu()
+        return default_width, default_height
 
-        # Central widget
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+    def _create_ui_components(self, layout: QVBoxLayout) -> None:
+        """Create and add the main UI components to the layout.
 
-        # Main layout
-        layout = QVBoxLayout(central_widget)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(10)
+        Creates the three main areas: task list, action buttons, and terminal output.
+        Sets up the terminal reference for other components to use.
 
+        :param layout: The main vertical layout to add components to
+        :type layout: QVBoxLayout
+        """
         # Area A1: Task List (42.5% of height)
         self.task_list = TaskListFrame()
         layout.addWidget(self.task_list, 42)
@@ -583,7 +600,36 @@ class MainWindow(QMainWindow):
         # Store reference to terminal for other components
         self.terminal = self.terminal_frame.terminal
 
-        # Log the window size information
+    def _setup_layout(self) -> QVBoxLayout:
+        """Setup the central widget and main layout.
+
+        Creates the central widget, sets it on the main window, and creates
+        the main vertical layout with appropriate margins and spacing.
+
+        :returns: The main vertical layout for adding components
+        :rtype: QVBoxLayout
+        """
+        # Central widget
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        # Main layout
+        layout = QVBoxLayout(central_widget)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+
+        return layout
+
+    def _log_window_size_info(self) -> None:
+        """Log window size information for debugging and user feedback.
+
+        Logs the detected screen size, final window size, and whether
+        the window size was adjusted to fit the screen.
+        """
+        # Get the original default sizes for comparison
+        default_width = self.config.getint("MainWindow", "width")
+        default_height = self.config.getint("MainWindow", "height")
+
         logging.info(f"Screen size: {self.screen_width}x{self.screen_height}")
         logging.info(f"Window size: {self.window_width}x{self.window_height}")
         if self.window_width < default_width or self.window_height < default_height:
