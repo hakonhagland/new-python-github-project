@@ -22,7 +22,7 @@ class TestMainWindow:
         """
         # Mock the setup_post_fork_logging to avoid side effects
         mock_setup_logging = mocker.patch(
-            "new_python_github_project.main_window.setup_post_fork_logging"
+            "new_python_github_project.main_window.logging_handlers.setup_post_fork_logging"
         )
 
         # Mock the setup_ui method to isolate constructor testing

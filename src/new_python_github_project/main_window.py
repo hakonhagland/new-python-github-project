@@ -27,7 +27,7 @@ from PyQt6.QtWidgets import QApplication
 
 from new_python_github_project.config import Config
 from new_python_github_project.task import Task, TaskItemWidget
-from new_python_github_project.logging_handlers import setup_post_fork_logging
+from new_python_github_project import logging_handlers
 
 
 class TaskListFrame(QFrame):
@@ -505,7 +505,7 @@ class MainWindow(QMainWindow):
         self.setup_ui()
 
         # Setup post-fork logging to replay buffered messages and route future logs to GUI
-        setup_post_fork_logging(self)
+        logging_handlers.setup_post_fork_logging(self)
 
     def setup_ui(self) -> None:
         """Setup the main window UI components.
