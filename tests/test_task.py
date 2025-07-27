@@ -6,13 +6,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from PyQt6.QtCore import QPointF, Qt
 from PyQt6.QtGui import QMouseEvent
-from PyQt6.QtWidgets import QDialogButtonBox, QLabel
+from PyQt6.QtWidgets import QDialogButtonBox, QLabel, QLineEdit, QTextEdit
 
 from new_python_github_project.task import (
     ClickableLabel,
     LicenseSelectionDialog,
     PythonVersionDialog,
     Task,
+    TaskConfigDialog,
 )
 
 if TYPE_CHECKING:
@@ -857,3 +858,404 @@ class TestLicenseSelectionDialog:
         description = dialog.description_label.text()
         assert description != ""
         assert len(description) > 10  # Should have meaningful description
+
+
+class TestTaskConfigDialog:
+    """Test cases for TaskConfigDialog class."""
+
+    def test_init_with_task(self, qtbot: "QtBot") -> None:
+        """Test TaskConfigDialog initialization with task."""
+        task = Task("Test task", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        assert dialog.task == task
+        assert dialog.result_value is None
+
+    def test_init_with_parent(self, qtbot: "QtBot") -> None:
+        """Test TaskConfigDialog initialization with parent widget."""
+        parent = QLabel()
+        qtbot.addWidget(parent)
+
+        task = Task("Test task", False)
+        dialog = TaskConfigDialog(task, parent)
+        qtbot.addWidget(dialog)
+
+        assert dialog.parent() == parent
+        assert dialog.task == task
+
+    def test_setup_ui_project_description_task(self, qtbot: "QtBot") -> None:
+        """Test setup_ui for project description task with text edit."""
+        task = Task("Set project description", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Check window properties for description task
+        assert dialog.windowTitle() == "Configure: Set project description"
+        assert dialog.isModal() is True
+        assert dialog.size().width() == 500
+        assert dialog.size().height() == 300
+
+        # Check that it uses text edit
+        assert dialog.use_text_edit is True
+        assert isinstance(dialog.input_field, QTextEdit)
+        assert hasattr(dialog, "char_count_label")
+
+    def test_setup_ui_author_name_task(self, qtbot: "QtBot") -> None:
+        """Test setup_ui for author name task with line edit."""
+        task = Task("Set author name", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Check window properties for author name task
+        assert dialog.windowTitle() == "Configure: Set author name"
+        assert dialog.isModal() is True
+        assert dialog.size().width() == 400
+        assert dialog.size().height() == 200
+
+        # Check that it uses line edit
+        assert dialog.use_text_edit is False
+        assert isinstance(dialog.input_field, QLineEdit)
+        assert not hasattr(dialog, "char_count_label")
+
+    def test_setup_ui_project_name_task(self, qtbot: "QtBot") -> None:
+        """Test setup_ui for project name task (default case)."""
+        task = Task("Set project name", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Check window properties for project name task
+        assert dialog.windowTitle() == "Configure: Set project name"
+        assert dialog.isModal() is True
+        assert dialog.size().width() == 400
+        assert dialog.size().height() == 200
+
+        # Check that it uses line edit (default case)
+        assert dialog.use_text_edit is False
+        assert isinstance(dialog.input_field, QLineEdit)
+
+    def test_setup_ui_with_existing_configured_value_text_edit(
+        self, qtbot: "QtBot"
+    ) -> None:
+        """Test setup_ui pre-fills existing value for text edit."""
+        task = Task("Set project description", False)
+        task.configured_value = "Existing description"
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        assert isinstance(dialog.input_field, QTextEdit)
+        assert dialog.input_field.toPlainText() == "Existing description"
+
+    def test_setup_ui_with_existing_configured_value_line_edit(
+        self, qtbot: "QtBot"
+    ) -> None:
+        """Test setup_ui pre-fills existing value for line edit."""
+        task = Task("Set author name", False)
+        task.configured_value = "John Doe"
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        assert isinstance(dialog.input_field, QLineEdit)
+        assert dialog.input_field.text() == "John Doe"
+        # Text should be selected for easy replacement
+        assert dialog.input_field.hasSelectedText()
+
+    def test_setup_ui_with_no_configured_value(self, qtbot: "QtBot") -> None:
+        """Test setup_ui when task has no configured_value attribute."""
+        task = Task("Test task", False)
+        # Don't set configured_value attribute
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Should not crash and should have empty field
+        assert isinstance(dialog.input_field, QLineEdit)
+        assert dialog.input_field.text() == ""
+
+    def test_placeholder_texts(self, qtbot: "QtBot") -> None:
+        """Test that appropriate placeholder texts are set."""
+        # Test description task
+        desc_task = Task("Set project description", False)
+        desc_dialog = TaskConfigDialog(desc_task)
+        qtbot.addWidget(desc_dialog)
+        assert (
+            "description of your project" in desc_dialog.input_field.placeholderText()
+        )
+
+        # Test author name task
+        author_task = Task("Set author name", False)
+        author_dialog = TaskConfigDialog(author_task)
+        qtbot.addWidget(author_dialog)
+        assert "author name" in author_dialog.input_field.placeholderText()
+
+        # Test project name task (default)
+        name_task = Task("Set project name", False)
+        name_dialog = TaskConfigDialog(name_task)
+        qtbot.addWidget(name_dialog)
+        assert "project name" in name_dialog.input_field.placeholderText()
+
+    def test_update_char_count_for_description(self, qtbot: "QtBot") -> None:
+        """Test character count update for description task."""
+        task = Task("Set project description", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Initially should show 0 characters
+        assert dialog.char_count_label.text() == "0 characters"
+
+        # Set some text and update
+        assert isinstance(dialog.input_field, QTextEdit)
+        dialog.input_field.setPlainText("Hello World")
+        dialog.update_char_count()
+
+        assert dialog.char_count_label.text() == "11 characters"
+
+    def test_update_char_count_without_label(self, qtbot: "QtBot") -> None:
+        """Test update_char_count when char_count_label doesn't exist."""
+        task = Task("Set author name", False)  # Non-description task
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Should not crash when called on non-description dialog
+        dialog.update_char_count()  # Should do nothing
+
+    def test_clear_error_styling_text_edit(self, qtbot: "QtBot") -> None:
+        """Test clear_error_styling for text edit field."""
+        task = Task("Set project description", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Set error styling
+        dialog.input_field.setStyleSheet("border: 1px solid red;")
+        assert "red" in dialog.input_field.styleSheet()
+
+        # Clear error styling
+        dialog.clear_error_styling()
+        assert dialog.input_field.styleSheet() == ""
+
+    def test_clear_error_styling_line_edit(self, qtbot: "QtBot") -> None:
+        """Test clear_error_styling for line edit field."""
+        task = Task("Set author name", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Set error styling
+        dialog.input_field.setStyleSheet("border: 1px solid red;")
+        assert "red" in dialog.input_field.styleSheet()
+
+        # Clear error styling
+        dialog.clear_error_styling()
+        assert dialog.input_field.styleSheet() == ""
+
+    def test_accept_with_valid_text_edit_input(self, qtbot: "QtBot") -> None:
+        """Test accept method with valid text edit input."""
+        task = Task("Set project description", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Set valid input
+        assert isinstance(dialog.input_field, QTextEdit)
+        dialog.input_field.setPlainText("  Valid description  ")
+
+        # Mock super().accept() to prevent actual dialog closing
+        with patch.object(dialog.__class__.__bases__[0], "accept"):
+            dialog.accept()
+
+        # Should strip whitespace and store value
+        assert dialog.result_value == "Valid description"
+        assert dialog.task.configured_value == "Valid description"
+
+    def test_accept_with_valid_line_edit_input(self, qtbot: "QtBot") -> None:
+        """Test accept method with valid line edit input."""
+        task = Task("Set author name", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Set valid input
+        assert isinstance(dialog.input_field, QLineEdit)
+        dialog.input_field.setText("  John Doe  ")
+
+        # Mock super().accept() to prevent actual dialog closing
+        with patch.object(dialog.__class__.__bases__[0], "accept"):
+            dialog.accept()
+
+        # Should strip whitespace and store value
+        assert dialog.result_value == "John Doe"
+        assert dialog.task.configured_value == "John Doe"
+
+    def test_accept_with_empty_text_edit_input(self, qtbot: "QtBot") -> None:
+        """Test accept method with empty text edit input."""
+        task = Task("Set project description", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Set empty input
+        assert isinstance(dialog.input_field, QTextEdit)
+        dialog.input_field.setPlainText("   ")  # Only whitespace
+
+        dialog.accept()
+
+        # Should show error styling and not close dialog
+        assert "red" in dialog.input_field.styleSheet()
+        assert dialog.result_value is None
+
+    def test_accept_with_empty_line_edit_input(self, qtbot: "QtBot") -> None:
+        """Test accept method with empty line edit input."""
+        task = Task("Set author name", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Set empty input
+        assert isinstance(dialog.input_field, QLineEdit)
+        dialog.input_field.setText("   ")  # Only whitespace
+
+        dialog.accept()
+
+        # Should show error styling and not close dialog
+        assert "red" in dialog.input_field.styleSheet()
+        assert dialog.result_value is None
+
+    def test_get_result_returns_configured_value(self, qtbot: "QtBot") -> None:
+        """Test get_result returns the configured value."""
+        task = Task("Test task", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Initially should return None
+        assert dialog.get_result() is None
+
+        # Set a result value
+        test_value = "Test result"
+        dialog.result_value = test_value
+        assert dialog.get_result() == test_value
+
+    def test_signal_connections_text_edit(self, qtbot: "QtBot") -> None:
+        """Test that signal connections work for text edit."""
+        task = Task("Set project description", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Test character count signal
+        assert isinstance(dialog.input_field, QTextEdit)
+        dialog.input_field.setPlainText("Test")
+        qtbot.wait(10)  # Small wait for signal processing
+
+        assert "4 characters" in dialog.char_count_label.text()
+
+    def test_signal_connections_line_edit(self, qtbot: "QtBot") -> None:
+        """Test that signal connections work for line edit."""
+        task = Task("Set author name", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Set error styling first
+        dialog.input_field.setStyleSheet("border: 1px solid red;")
+        assert "red" in dialog.input_field.styleSheet()
+
+        # Change text should clear styling
+        assert isinstance(dialog.input_field, QLineEdit)
+        dialog.input_field.setText("New text")
+        qtbot.wait(10)  # Small wait for signal processing
+
+        # Error styling should be cleared
+        assert dialog.input_field.styleSheet() == ""
+
+    def test_dialog_has_ok_cancel_buttons(self, qtbot: "QtBot") -> None:
+        """Test that dialog has OK and Cancel buttons."""
+        task = Task("Test task", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Find button box in the dialog
+        button_boxes = dialog.findChildren(QDialogButtonBox)
+        assert len(button_boxes) > 0
+
+        button_box = button_boxes[0]
+        ok_button = button_box.button(QDialogButtonBox.StandardButton.Ok)
+        cancel_button = button_box.button(QDialogButtonBox.StandardButton.Cancel)
+
+        assert ok_button is not None
+        assert cancel_button is not None
+
+    def test_input_field_has_focus(self, qtbot: "QtBot") -> None:
+        """Test that input field receives focus on setup."""
+        task = Task("Test task", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Show the dialog to properly set focus
+        dialog.show()
+        with qtbot.waitExposed(dialog):
+            pass
+
+        # The input field should have focus (or be focusable)
+        assert (
+            dialog.input_field.hasFocus()
+            or dialog.input_field.focusPolicy() != Qt.FocusPolicy.NoFocus
+        )
+
+    def test_title_label_configuration(self, qtbot: "QtBot") -> None:
+        """Test that title label is configured correctly."""
+        task = Task("Custom Task Name", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Find title label
+        title_labels = [
+            child
+            for child in dialog.findChildren(QLabel)
+            if "Configure: Custom Task Name" in child.text()
+        ]
+        assert len(title_labels) > 0
+
+        title_label = title_labels[0]
+        font = title_label.font()
+        assert font.bold()
+        assert font.pointSize() == 14
+
+    def test_input_label_text_for_different_tasks(self, qtbot: "QtBot") -> None:
+        """Test that input labels have correct text for different task types."""
+        # Description task
+        desc_task = Task("Set project description", False)
+        desc_dialog = TaskConfigDialog(desc_task)
+        qtbot.addWidget(desc_dialog)
+        assert desc_dialog.input_label.text() == "Project description:"
+
+        # Author name task
+        author_task = Task("Set author name", False)
+        author_dialog = TaskConfigDialog(author_task)
+        qtbot.addWidget(author_dialog)
+        assert author_dialog.input_label.text() == "Author name:"
+
+        # Default case (project name)
+        name_task = Task("Set project name", False)
+        name_dialog = TaskConfigDialog(name_task)
+        qtbot.addWidget(name_dialog)
+        assert name_dialog.input_label.text() == "Project name:"
+
+    def test_text_edit_maximum_height(self, qtbot: "QtBot") -> None:
+        """Test that text edit has correct maximum height."""
+        task = Task("Set project description", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        assert isinstance(dialog.input_field, QTextEdit)
+        assert dialog.input_field.maximumHeight() == 100
+
+    def test_line_edit_minimum_height(self, qtbot: "QtBot") -> None:
+        """Test that line edit has correct minimum height."""
+        task = Task("Set author name", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        assert isinstance(dialog.input_field, QLineEdit)
+        assert dialog.input_field.minimumHeight() == 30
+
+    def test_char_count_label_styling(self, qtbot: "QtBot") -> None:
+        """Test that character count label has correct styling."""
+        task = Task("Set project description", False)
+        dialog = TaskConfigDialog(task)
+        qtbot.addWidget(dialog)
+
+        stylesheet = dialog.char_count_label.styleSheet()
+        assert "color: #666" in stylesheet
+        assert "font-size: 11px" in stylesheet
