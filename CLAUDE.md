@@ -131,6 +131,39 @@ make docker-container
 - **Always activate virtual environment before running git commands**
 - **Avoid `git commit --amend`**: Creates duplicate commit messages and overwrites history
 
+### Commit Message Format
+
+This project follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. All commit messages must follow this format:
+
+```
+<type>: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+**Allowed types**:
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, linting)
+- `refactor`: Code refactoring without feature changes
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks, dependency updates
+- `ci`: CI/CD configuration changes
+- `perf`: Performance improvements
+- `build`: Build system changes
+- `revert`: Reverting previous commits
+
+**Examples**:
+- `feat: add dark mode toggle to settings`
+- `fix: resolve memory leak in task processor`
+- `style: format code with ruff`
+- `docs: update installation instructions`
+
+The conventional commits format is enforced by a pre-commit hook.
+
 ### Pre-commit Hooks
 
 This project uses pre-commit hooks for code quality checks. **Critical**: You must activate the virtual environment before committing:
