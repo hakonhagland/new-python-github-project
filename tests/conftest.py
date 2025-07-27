@@ -5,6 +5,7 @@ import pytest
 from pytest_mock.plugin import MockerFixture
 
 from new_python_github_project.config import Config
+
 from .common import GetConfig, PytestDataDict
 
 

@@ -1,19 +1,20 @@
+import logging
+from typing import Any, Dict, Optional, Union
+
+from PyQt6.QtCore import QEvent, Qt
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
-    QVBoxLayout,
-    QHBoxLayout,
-    QWidget,
-    QLabel,
-    QTextEdit,
+    QComboBox,
     QDialog,
-    QLineEdit,
     QDialogButtonBox,
     QFileDialog,
-    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
-from PyQt6.QtCore import Qt, QEvent
-from PyQt6.QtGui import QFont
-import logging
-from typing import Any, Optional, Dict, Union
 
 
 class Task:

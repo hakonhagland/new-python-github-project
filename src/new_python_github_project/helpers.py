@@ -1,15 +1,15 @@
 import json
 import logging
 import os
-from pathlib import Path
 import platform
+import subprocess
 import sys
 import sysconfig
-import subprocess
+from pathlib import Path
 
 import click
+from PyQt6.QtGui import QGuiApplication, QIcon
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QIcon, QGuiApplication
 
 from new_python_github_project.config import Config
 from new_python_github_project.constants import Directories, FileNames

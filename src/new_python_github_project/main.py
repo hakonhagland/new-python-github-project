@@ -3,11 +3,10 @@ import sys
 
 import click
 
+from new_python_github_project import helpers, runtime
 from new_python_github_project.config import Config
-from new_python_github_project import helpers
-from new_python_github_project import runtime
-from new_python_github_project.main_window import MainWindow
 from new_python_github_project.logging_handlers import setup_pre_fork_logging
+from new_python_github_project.main_window import MainWindow
 
 # Explicitly export runtime for test access
 __all__ = ["main", "create", "edit_config", "runtime"]

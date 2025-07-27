@@ -1,33 +1,33 @@
 import logging
-from typing import cast, List, Optional
+from typing import List, Optional, cast
 
-from PyQt6.QtWidgets import (
-    QFrame,
-    QVBoxLayout,
-    QLabel,
-    QScrollArea,
-    QWidget,
-    QPushButton,
-    QHBoxLayout,
-    QMessageBox,
-    QTextEdit,
-    QMainWindow,
-)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import (
-    QFont,
-    QTextCursor,
     QAction,
-    QGuiApplication,
-    QResizeEvent,
     QCloseEvent,
+    QFont,
+    QGuiApplication,
     QIcon,
+    QResizeEvent,
+    QTextCursor,
 )
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import (
+    QApplication,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
+from new_python_github_project import logging_handlers
 from new_python_github_project.config import Config
 from new_python_github_project.task import Task, TaskItemWidget
-from new_python_github_project import logging_handlers
 
 
 class TaskListFrame(QFrame):

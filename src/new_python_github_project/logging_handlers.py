@@ -11,10 +11,10 @@ terminal (during startup) and in the GUI (after daemonization).
 """
 
 import logging
-import tempfile
 import os
+import tempfile
 from pathlib import Path
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     from .main_window import MainWindow

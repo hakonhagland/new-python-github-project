@@ -4,14 +4,13 @@ import logging
 import os
 import shutil
 import typing
-
 from configparser import ConfigParser
 from pathlib import Path
 
 import platformdirs
 
-from new_python_github_project.exceptions import ConfigException
 from new_python_github_project.constants import Directories, FileNames
+from new_python_github_project.exceptions import ConfigException
 
 
 class Config:
