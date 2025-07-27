@@ -7,6 +7,7 @@ from pytest_mock.plugin import MockerFixture
 from pytestqt.qtbot import QtBot
 
 from new_python_github_project.main_window import MainWindow, TerminalFrame
+
 from .common import GetConfig
 
 

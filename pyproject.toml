@@ -58,6 +58,16 @@ exclude = [
     "src/new_python_github_project/data/templates/"
 ]
 
+[tool.ruff.lint]
+# Enable import sorting rules to catch import organization issues
+select = ["I"]
+
+[tool.ruff.lint.isort]
+# Configure import sorting to match CLAUDE.md standards
+# Order: standard library → third-party → local (alphabetically sorted)
+known-first-party = ["new_python_github_project"]
+split-on-trailing-comma = true
+
 [tool.coverage.report]
 fail_under = 20
 
