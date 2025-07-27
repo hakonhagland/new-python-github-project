@@ -111,3 +111,46 @@ class TestMainWindow:
 
         # Verify central widget was set
         assert window.centralWidget() is not None
+
+    def test_configure_window_size_and_position_no_screen(
+        self, qtbot: QtBot, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test _configure_window_size_and_position with no primary screen available.
+
+        This test covers the fallback case when QGuiApplication.primaryScreen()
+        returns None, ensuring the method uses default screen dimensions.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param get_config: Fixture to get a test Config instance
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock QGuiApplication.primaryScreen() to return None (no screen available)
+        mocker.patch(
+            "new_python_github_project.main_window.QGuiApplication.primaryScreen",
+            return_value=None,
+        )
+
+        # Get test configuration and app
+        config = get_config()
+        app = QApplication.instance()
+        assert app is not None and isinstance(app, QApplication)
+
+        # Mock other methods to isolate _configure_window_size_and_position
+        mocker.patch(
+            "new_python_github_project.main_window.logging_handlers.setup_post_fork_logging"
+        )
+        mocker.patch.object(MainWindow, "_set_window_icon")
+        mocker.patch.object(MainWindow, "_setup_menu")
+        mocker.patch.object(
+            MainWindow, "_setup_layout", return_value=mocker.MagicMock()
+        )
+        mocker.patch.object(MainWindow, "_create_ui_components")
+        mocker.patch.object(MainWindow, "_log_window_size_info")
+
+        # Create MainWindow instance - this will call _configure_window_size_and_position
+        window = MainWindow(app, config)
+        qtbot.addWidget(window)
+
+        # Verify fallback screen dimensions were used (lines 588-589)
+        assert window.screen_width == 1920
+        assert window.screen_height == 1080
