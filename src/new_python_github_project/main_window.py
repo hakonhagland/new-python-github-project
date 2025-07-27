@@ -650,7 +650,7 @@ class MainWindow(QMainWindow):
         especially important on Windows where the application-level icon may not
         always be properly displayed in the taskbar and window title bar.
 
-        Since _load_icons() has already set the application icon via app.setWindowIcon(),
+        Since helpers._load_icons() has already set the application icon via app.setWindowIcon(),
         we can retrieve and reuse that same icon for consistency across all platforms.
         """
         # Try to use the application icon that was already loaded
