@@ -117,6 +117,56 @@ class TestMain:
         # sys.exit should be called at least once (Click may call it too)
         assert mock_sys_exit.call_count >= 1
 
+    def test_create_command_no_detach(self, mocker: MockerFixture) -> None:
+        """Test the create command with --no-detach flag to cover line 52."""
+        # Mock all dependencies to avoid actually starting GUI
+        mock_config = mocker.patch("new_python_github_project.main.Config")
+        mock_check_instance = mocker.patch(
+            "new_python_github_project.main.helpers.check_another_instance_running"
+        )
+        mock_check_deps = mocker.patch(
+            "new_python_github_project.main.runtime.check_deps"
+        )
+        mock_detach = mocker.patch(
+            "new_python_github_project.main.helpers.detach_from_terminal"
+        )
+        mock_create_app = mocker.patch(
+            "new_python_github_project.main.helpers.create_qapplication"
+        )
+        mock_main_window = mocker.patch("new_python_github_project.main.MainWindow")
+        mock_sys_exit = mocker.patch("sys.exit")
+
+        # Mock config instance and its write_lockfile method
+        config_instance = mocker.MagicMock()
+        mock_config.return_value = config_instance
+
+        # Mock the QApplication and its exec method
+        mock_app = mocker.MagicMock()
+        mock_app.exec.return_value = 0
+        mock_create_app.return_value = mock_app
+
+        # Mock MainWindow instance
+        mock_window = mocker.MagicMock()
+        mock_main_window.return_value = mock_window
+
+        runner = CliRunner()
+        runner.invoke(main.create, ["--no-detach"])
+
+        # Verify all components are called in correct order
+        mock_config.assert_called_once()
+        mock_check_instance.assert_called_once()
+        mock_check_deps.assert_called_once()
+        # detach_from_terminal should NOT be called with --no-detach
+        mock_detach.assert_not_called()
+        # write_lockfile should be called instead (this covers line 52)
+        config_instance.write_lockfile.assert_called_once()
+        mock_create_app.assert_called_once()
+        mock_main_window.assert_called_once()
+        mock_window.show.assert_called_once()
+        mock_app.exec.assert_called_once()
+        # sys.exit should be called at least once (Click may call it too)
+        assert mock_sys_exit.call_count >= 1
+
     def test_edit_config_command(self, mocker: MockerFixture) -> None:
         """Test the edit_config command execution path."""
         # Mock dependencies
