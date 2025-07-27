@@ -1,12 +1,12 @@
 """Unit tests for task.py module."""
 
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from PyQt6.QtCore import QPointF, Qt
 from PyQt6.QtGui import QMouseEvent
-from PyQt6.QtWidgets import QLabel
+from PyQt6.QtWidgets import QDialogButtonBox, QLabel
 
 from new_python_github_project.task import (
     ClickableLabel,
@@ -341,8 +341,6 @@ class TestPythonVersionDialog:
         dialog.custom_input.setText(custom_requirement)
 
         # Mock only super().accept() to prevent actual dialog closing
-        from unittest.mock import patch
-
         with patch.object(dialog.__class__.__bases__[0], "accept"):
             dialog.accept()
 
@@ -365,8 +363,6 @@ class TestPythonVersionDialog:
                 break
 
         # Mock only super().accept() to prevent actual dialog closing
-        from unittest.mock import patch
-
         with patch.object(dialog.__class__.__bases__[0], "accept"):
             dialog.accept()
 
@@ -383,8 +379,6 @@ class TestPythonVersionDialog:
         dialog.custom_input.setText("  >=3.8  ")
 
         # Mock only super().accept() to prevent actual dialog closing
-        from unittest.mock import patch
-
         with patch.object(dialog.__class__.__bases__[0], "accept"):
             dialog.accept()
 
@@ -407,8 +401,6 @@ class TestPythonVersionDialog:
         dialog.version_combo.setCurrentText("3.11")
 
         # Mock only super().accept() to prevent actual dialog closing
-        from unittest.mock import patch
-
         with patch.object(dialog.__class__.__bases__[0], "accept"):
             dialog.accept()
 
@@ -470,8 +462,6 @@ class TestPythonVersionDialog:
         qtbot.addWidget(dialog)
 
         # Find button box in the dialog
-        from PyQt6.QtWidgets import QDialogButtonBox
-
         button_boxes = dialog.findChildren(QDialogButtonBox)
         assert len(button_boxes) > 0
 
@@ -750,8 +740,6 @@ class TestLicenseSelectionDialog:
                 break
 
         # Mock super().accept() to prevent actual dialog closing
-        from unittest.mock import patch
-
         with patch.object(dialog.__class__.__bases__[0], "accept"):
             dialog.accept()
 
@@ -770,8 +758,6 @@ class TestLicenseSelectionDialog:
                 break
 
         # Mock super().accept() to prevent actual dialog closing
-        from unittest.mock import patch
-
         with patch.object(dialog.__class__.__bases__[0], "accept"):
             dialog.accept()
 
@@ -815,8 +801,6 @@ class TestLicenseSelectionDialog:
         qtbot.addWidget(dialog)
 
         # Find button box in the dialog
-        from PyQt6.QtWidgets import QDialogButtonBox
-
         button_boxes = dialog.findChildren(QDialogButtonBox)
         assert len(button_boxes) > 0
 
