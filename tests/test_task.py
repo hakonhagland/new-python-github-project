@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
-from PyQt6.QtCore import QPointF, Qt
-from PyQt6.QtGui import QMouseEvent
-from PyQt6.QtWidgets import QDialogButtonBox, QLabel, QLineEdit, QTextEdit
+from PyQt6.QtCore import QEvent, QPointF, Qt
+from PyQt6.QtGui import QEnterEvent, QMouseEvent
+from PyQt6.QtWidgets import QDialogButtonBox, QHBoxLayout, QLabel, QLineEdit, QTextEdit
 
 from new_python_github_project.task import (
     ClickableLabel,
@@ -14,6 +14,7 @@ from new_python_github_project.task import (
     PythonVersionDialog,
     Task,
     TaskConfigDialog,
+    TaskItemWidget,
 )
 
 if TYPE_CHECKING:
@@ -1259,3 +1260,558 @@ class TestTaskConfigDialog:
         stylesheet = dialog.char_count_label.styleSheet()
         assert "color: #666" in stylesheet
         assert "font-size: 11px" in stylesheet
+
+
+class TestTaskItemWidget:
+    """Test cases for TaskItemWidget class."""
+
+    def test_init_with_task(self, qtbot: "QtBot") -> None:
+        """Test TaskItemWidget initialization with task."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        assert widget.task == task
+
+    def test_init_with_parent(self, qtbot: "QtBot") -> None:
+        """Test TaskItemWidget initialization with parent widget."""
+        parent = QLabel()
+        qtbot.addWidget(parent)
+
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task, parent)
+        qtbot.addWidget(widget)
+
+        assert widget.parent() == parent
+        assert widget.task == task
+
+    def test_setup_ui_creates_components(self, qtbot: "QtBot") -> None:
+        """Test setup_ui creates all necessary UI components."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Check that components exist
+        assert hasattr(widget, "status_label")
+        assert hasattr(widget, "task_label")
+        assert widget.status_label is not None
+        assert widget.task_label is not None
+        assert isinstance(widget.task_label, ClickableLabel)
+
+    def test_setup_ui_layout_configuration(self, qtbot: "QtBot") -> None:
+        """Test setup_ui configures layout correctly."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        layout = widget.layout()
+        assert isinstance(layout, QHBoxLayout)
+        assert layout.contentsMargins().left() == 5
+        assert layout.spacing() == 10
+
+    def test_setup_ui_status_label_size(self, qtbot: "QtBot") -> None:
+        """Test setup_ui configures status label size correctly."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        assert widget.status_label.size().width() == 28
+        assert widget.status_label.size().height() == 28
+
+    def test_setup_ui_mouse_tracking_enabled(self, qtbot: "QtBot") -> None:
+        """Test setup_ui enables mouse tracking."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        assert widget.hasMouseTracking() is True
+
+    def test_setup_ui_styling_applied(self, qtbot: "QtBot") -> None:
+        """Test setup_ui applies correct styling."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        stylesheet = widget.styleSheet()
+        assert "background-color: #f8f8f8" in stylesheet
+        assert "border: 1px solid #ddd" in stylesheet
+        assert "border-radius: 4px" in stylesheet
+        assert "QToolTip" in stylesheet
+
+    def test_update_status_icon_completed_task(self, qtbot: "QtBot") -> None:
+        """Test update_status_icon for completed task."""
+        task = Task("Test task", False)
+        task.is_completed = True  # This will make status return "completed"
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        widget.update_status_icon()
+
+        assert widget.status_label.text() == "✓"
+        stylesheet = widget.status_label.styleSheet()
+        assert "color: #4CAF50" in stylesheet
+        assert "font-weight: bold" in stylesheet
+        assert "font-size: 20px" in stylesheet
+
+    def test_update_status_icon_incomplete_task(self, qtbot: "QtBot") -> None:
+        """Test update_status_icon for incomplete task."""
+        task = Task("Test task", False)
+        # Task is already pending by default (has_default=False, is_completed=False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        widget.update_status_icon()
+
+        assert widget.status_label.text() == "?"
+        stylesheet = widget.status_label.styleSheet()
+        assert "color: #f44336" in stylesheet
+        assert "font-weight: bold" in stylesheet
+        assert "font-size: 20px" in stylesheet
+
+    def test_mark_as_completed(self, qtbot: "QtBot") -> None:
+        """Test mark_as_completed method."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        widget.mark_as_completed()
+
+        assert task.is_completed is True
+        assert task.user_modified is True
+        assert widget.status_label.text() == "✓"
+
+    def test_mark_as_using_default(self, qtbot: "QtBot") -> None:
+        """Test mark_as_using_default method."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        widget.mark_as_using_default()
+
+        assert task.is_completed is True
+        assert task.user_modified is False
+        assert widget.status_label.text() == "✓"
+
+    def test_update_task_label(self, qtbot: "QtBot") -> None:
+        """Test update_task_label updates the task label text."""
+        task = Task("Original description", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock get_display_text to return a specific value
+        with patch.object(task, "get_display_text", return_value="Updated description"):
+            widget.update_task_label()
+
+        assert widget.task_label.text() == "Updated description"
+
+    def test_mouse_press_event_left_button(self, qtbot: "QtBot") -> None:
+        """Test mousePressEvent handles left button clicks."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock the on_task_clicked method to verify it's called
+        mock_method = MagicMock()
+        widget.on_task_clicked = mock_method  # type: ignore[method-assign]
+
+        # Create a left button mouse press event
+        pos = QPointF(widget.rect().center())
+        event = QMouseEvent(
+            QMouseEvent.Type.MouseButtonPress,
+            pos,
+            Qt.MouseButton.LeftButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+
+        widget.mousePressEvent(event)
+        mock_method.assert_called_once()
+
+    def test_mouse_press_event_right_button(self, qtbot: "QtBot") -> None:
+        """Test mousePressEvent ignores right button clicks."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock the on_task_clicked method to verify it's not called
+        mock_method = MagicMock()
+        widget.on_task_clicked = mock_method  # type: ignore[method-assign]
+
+        # Create a right button mouse press event
+        pos = QPointF(widget.rect().center())
+        event = QMouseEvent(
+            QMouseEvent.Type.MouseButtonPress,
+            pos,
+            Qt.MouseButton.RightButton,
+            Qt.MouseButton.RightButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+
+        widget.mousePressEvent(event)
+        mock_method.assert_not_called()
+
+    def test_event_filter_enter_event(self, qtbot: "QtBot") -> None:
+        """Test eventFilter handles Enter events for tooltip."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock show_custom_tooltip
+        mock_show = MagicMock()
+        widget.show_custom_tooltip = mock_show  # type: ignore[method-assign]
+
+        # Create an Enter event
+        enter_event = QEnterEvent(QPointF(10, 10), QPointF(100, 100), QPointF(200, 200))
+        enter_event.type = lambda: QEvent.Type.Enter  # type: ignore[method-assign]
+
+        result = widget.eventFilter(widget.status_label, enter_event)
+
+        assert result is True
+        mock_show.assert_called_once_with(enter_event)
+
+    def test_event_filter_leave_event(self, qtbot: "QtBot") -> None:
+        """Test eventFilter handles Leave events for tooltip."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock hide_custom_tooltip
+        mock_hide = MagicMock()
+        widget.hide_custom_tooltip = mock_hide  # type: ignore[method-assign]
+
+        # Create a Leave event
+        leave_event = QEvent(QEvent.Type.Leave)
+
+        result = widget.eventFilter(widget.status_label, leave_event)
+
+        assert result is True
+        mock_hide.assert_called_once()
+
+    def test_event_filter_other_events(self, qtbot: "QtBot") -> None:
+        """Test eventFilter passes through other events."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Create a different event type
+        other_event = QEvent(QEvent.Type.Paint)
+
+        result = widget.eventFilter(widget.status_label, other_event)
+
+        assert result is False
+
+    def test_show_custom_tooltip(self, qtbot: "QtBot") -> None:
+        """Test show_custom_tooltip creates and shows tooltip."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock get_tooltip_text
+        with patch.object(task, "get_tooltip_text", return_value="Test tooltip"):
+            # Create a mock event with globalPos
+            mock_event = MagicMock()
+            mock_pos = MagicMock()
+            mock_pos.x.return_value = 100
+            mock_pos.y.return_value = 200
+            mock_event.globalPos.return_value = mock_pos
+
+            widget.show_custom_tooltip(mock_event)
+
+            assert widget.custom_tooltip is not None
+            assert widget.custom_tooltip.text() == "Test tooltip"
+
+    def test_hide_custom_tooltip(self, qtbot: "QtBot") -> None:
+        """Test hide_custom_tooltip hides and clears tooltip."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # First create a tooltip
+        widget.custom_tooltip = QLabel("Test tooltip")
+
+        widget.hide_custom_tooltip()
+
+        assert widget.custom_tooltip is None
+
+    def test_hide_custom_tooltip_when_none(self, qtbot: "QtBot") -> None:
+        """Test hide_custom_tooltip when tooltip is None."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Ensure tooltip is None
+        widget.custom_tooltip = None
+
+        # Should not crash
+        widget.hide_custom_tooltip()
+
+        assert widget.custom_tooltip is None
+
+    @patch("new_python_github_project.task.logging")
+    def test_on_task_clicked_project_name(
+        self, mock_logging: MagicMock, qtbot: "QtBot"
+    ) -> None:
+        """Test on_task_clicked for project name task."""
+        task = Task("Set project name", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock the dialog
+        with patch(
+            "new_python_github_project.task.TaskConfigDialog"
+        ) as mock_dialog_class:
+            mock_dialog = MagicMock()
+            mock_dialog.exec.return_value = 1  # QDialog.DialogCode.Accepted
+            mock_dialog.get_result.return_value = "MyProject"
+            mock_dialog_class.return_value = mock_dialog
+
+            widget.on_task_clicked()
+
+            # Verify dialog was created and executed
+            mock_dialog_class.assert_called_once_with(task, widget)
+            mock_dialog.exec.assert_called_once()
+            mock_dialog.get_result.assert_called_once()
+
+            # Verify task was marked as completed
+            assert task.is_completed is True
+            assert task.configured_value == "MyProject"
+
+            # Verify logging
+            mock_logging.info.assert_any_call("Task selected: Set project name")
+            mock_logging.info.assert_any_call("Project name configured: MyProject")
+
+    @patch("new_python_github_project.task.logging")
+    @patch("new_python_github_project.task.QFileDialog")
+    def test_on_task_clicked_project_directory(
+        self, mock_file_dialog: MagicMock, mock_logging: MagicMock, qtbot: "QtBot"
+    ) -> None:
+        """Test on_task_clicked for project directory task."""
+        task = Task("Set project directory", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock directory selection
+        mock_file_dialog.getExistingDirectory.return_value = "/path/to/project"
+
+        widget.on_task_clicked()
+
+        # Verify directory dialog was called
+        mock_file_dialog.getExistingDirectory.assert_called_once()
+
+        # Verify task was marked as completed
+        assert task.is_completed is True
+        assert task.configured_value == "/path/to/project"
+
+        # Verify logging
+        mock_logging.info.assert_any_call("Task selected: Set project directory")
+        mock_logging.info.assert_any_call("Project directory set to: /path/to/project")
+
+    @patch("new_python_github_project.task.logging")
+    @patch("new_python_github_project.task.QFileDialog")
+    def test_on_task_clicked_project_directory_cancelled(
+        self, mock_file_dialog: MagicMock, mock_logging: MagicMock, qtbot: "QtBot"
+    ) -> None:
+        """Test on_task_clicked for project directory task when cancelled."""
+        task = Task("Set project directory", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock directory selection cancelled
+        mock_file_dialog.getExistingDirectory.return_value = ""
+
+        widget.on_task_clicked()
+
+        # Verify task was not marked as completed
+        assert task.is_completed is False
+        assert not hasattr(task, "configured_value") or task.configured_value is None
+
+        # Verify logging
+        mock_logging.info.assert_any_call("Task selected: Set project directory")
+        mock_logging.info.assert_any_call("Directory selection cancelled")
+
+    @patch("new_python_github_project.task.logging")
+    def test_on_task_clicked_choose_license(
+        self, mock_logging: MagicMock, qtbot: "QtBot"
+    ) -> None:
+        """Test on_task_clicked for choose license task."""
+        task = Task("Choose license", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock the dialog
+        with patch(
+            "new_python_github_project.task.LicenseSelectionDialog"
+        ) as mock_dialog_class:
+            mock_dialog = MagicMock()
+            mock_dialog.exec.return_value = 1  # QDialog.DialogCode.Accepted
+            mock_dialog.get_result.return_value = "MIT"
+            mock_dialog_class.return_value = mock_dialog
+
+            widget.on_task_clicked()
+
+            # Verify dialog was created and executed
+            mock_dialog_class.assert_called_once_with(task, widget)
+            mock_dialog.exec.assert_called_once()
+            mock_dialog.get_result.assert_called_once()
+
+            # Verify task was marked as completed
+            assert task.is_completed is True
+            assert task.configured_value == "MIT"
+
+            # Verify logging
+            mock_logging.info.assert_any_call("Task selected: Choose license")
+            mock_logging.info.assert_any_call("License selected: MIT")
+
+    @patch("new_python_github_project.task.logging")
+    def test_on_task_clicked_python_version(
+        self, mock_logging: MagicMock, qtbot: "QtBot"
+    ) -> None:
+        """Test on_task_clicked for Python version task."""
+        task = Task("Choose Python version", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock the dialog
+        with patch(
+            "new_python_github_project.task.PythonVersionDialog"
+        ) as mock_dialog_class:
+            mock_dialog = MagicMock()
+            mock_dialog.exec.return_value = 1  # QDialog.DialogCode.Accepted
+            mock_dialog.get_result.return_value = ">=3.9"
+            mock_dialog_class.return_value = mock_dialog
+
+            widget.on_task_clicked()
+
+            # Verify dialog was created and executed
+            mock_dialog_class.assert_called_once_with(task, widget)
+            mock_dialog.exec.assert_called_once()
+            mock_dialog.get_result.assert_called_once()
+
+            # Verify task was marked as completed
+            assert task.is_completed is True
+            assert task.configured_value == ">=3.9"
+
+            # Verify logging
+            mock_logging.info.assert_any_call("Task selected: Choose Python version")
+            mock_logging.info.assert_any_call("Python version configured: >=3.9")
+
+    @patch("new_python_github_project.task.logging")
+    def test_on_task_clicked_project_description(
+        self, mock_logging: MagicMock, qtbot: "QtBot"
+    ) -> None:
+        """Test on_task_clicked for project description task."""
+        task = Task("Set project description", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock the dialog
+        with patch(
+            "new_python_github_project.task.TaskConfigDialog"
+        ) as mock_dialog_class:
+            mock_dialog = MagicMock()
+            mock_dialog.exec.return_value = 1  # QDialog.DialogCode.Accepted
+            mock_dialog.get_result.return_value = "A great project"
+            mock_dialog_class.return_value = mock_dialog
+
+            widget.on_task_clicked()
+
+            # Verify dialog was created and executed
+            mock_dialog_class.assert_called_once_with(task, widget)
+            mock_dialog.exec.assert_called_once()
+            mock_dialog.get_result.assert_called_once()
+
+            # Verify task was marked as completed
+            assert task.is_completed is True
+            assert task.configured_value == "A great project"
+
+            # Verify logging
+            mock_logging.info.assert_any_call("Task selected: Set project description")
+            mock_logging.info.assert_any_call(
+                "Project description configured: A great project"
+            )
+
+    @patch("new_python_github_project.task.logging")
+    def test_on_task_clicked_author_name(
+        self, mock_logging: MagicMock, qtbot: "QtBot"
+    ) -> None:
+        """Test on_task_clicked for author name task."""
+        task = Task("Set author name", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock the dialog
+        with patch(
+            "new_python_github_project.task.TaskConfigDialog"
+        ) as mock_dialog_class:
+            mock_dialog = MagicMock()
+            mock_dialog.exec.return_value = 1  # QDialog.DialogCode.Accepted
+            mock_dialog.get_result.return_value = "John Doe"
+            mock_dialog_class.return_value = mock_dialog
+
+            widget.on_task_clicked()
+
+            # Verify dialog was created and executed
+            mock_dialog_class.assert_called_once_with(task, widget)
+            mock_dialog.exec.assert_called_once()
+            mock_dialog.get_result.assert_called_once()
+
+            # Verify task was marked as completed
+            assert task.is_completed is True
+            assert task.configured_value == "John Doe"
+
+            # Verify logging
+            mock_logging.info.assert_any_call("Task selected: Set author name")
+            mock_logging.info.assert_any_call("Author name configured: John Doe")
+
+    @patch("new_python_github_project.task.logging")
+    def test_on_task_clicked_unknown_task(
+        self, mock_logging: MagicMock, qtbot: "QtBot"
+    ) -> None:
+        """Test on_task_clicked for unknown task type."""
+        task = Task("Unknown task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        widget.on_task_clicked()
+
+        # Verify task was not marked as completed
+        assert task.is_completed is False
+
+        # Verify logging
+        mock_logging.info.assert_any_call("Task selected: Unknown task")
+        mock_logging.info.assert_any_call(
+            "Task 'Unknown task' - configuration dialog not implemented yet"
+        )
+
+    def test_event_filter_installation(self, qtbot: "QtBot") -> None:
+        """Test that event filter is installed on status label."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # The event filter should be installed during update_status_icon
+        # We can't directly test this, but we can verify the tooltip is cleared
+        assert widget.status_label.toolTip() == ""
+
+    def test_custom_tooltip_styling(self, qtbot: "QtBot") -> None:
+        """Test custom tooltip has correct styling."""
+        task = Task("Test task", False)
+        widget = TaskItemWidget(task)
+        qtbot.addWidget(widget)
+
+        # Mock get_tooltip_text
+        with patch.object(task, "get_tooltip_text", return_value="Test tooltip"):
+            # Create a mock event
+            mock_event = MagicMock()
+            mock_pos = MagicMock()
+            mock_pos.x.return_value = 100
+            mock_pos.y.return_value = 200
+            mock_event.globalPos.return_value = mock_pos
+
+            widget.show_custom_tooltip(mock_event)
+
+            assert widget.custom_tooltip is not None
+            stylesheet = widget.custom_tooltip.styleSheet()
+            assert "color: #333" in stylesheet
+            assert "background-color: #f8f8f8" in stylesheet
+            assert "border: 1px solid #ccc" in stylesheet
