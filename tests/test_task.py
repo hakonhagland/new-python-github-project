@@ -18,7 +18,246 @@ from new_python_github_project.task import (
 )
 
 if TYPE_CHECKING:
-    from pytestqt.qtbot import QtBot
+    from pytestqt.qtbot import QtBot  # pragma: no cover
+
+
+class TestTask:
+    """Test cases for Task class."""
+
+    def test_init_default_values(self) -> None:
+        """Test Task initialization with default values."""
+        task = Task("Test description")
+
+        assert task.description == "Test description"
+        assert task.has_default is False
+        assert task.is_completed is False
+        assert task.default_value is None
+        assert task.user_modified is False
+        assert task.configured_value is None
+        assert task.configured_values == {}
+
+    def test_init_with_all_parameters(self) -> None:
+        """Test Task initialization with all parameters specified."""
+        task = Task(
+            description="Test task",
+            has_default=True,
+            is_completed=True,
+            default_value="default_val",
+        )
+
+        assert task.description == "Test task"
+        assert task.has_default is True
+        assert task.is_completed is True
+        assert task.default_value == "default_val"
+        assert task.user_modified is False
+        assert task.configured_value is None
+        assert task.configured_values == {}
+
+    def test_status_property_completed_when_is_completed_true(self) -> None:
+        """Test status property returns 'completed' when is_completed is True."""
+        task = Task("Test task", is_completed=True)
+        assert task.status == "completed"
+
+    def test_status_property_completed_when_has_default_true(self) -> None:
+        """Test status property returns 'completed' when has_default is True."""
+        task = Task("Test task", has_default=True)
+        assert task.status == "completed"
+
+    def test_status_property_completed_when_both_true(self) -> None:
+        """Test status property returns 'completed' when both conditions are True."""
+        task = Task("Test task", has_default=True, is_completed=True)
+        assert task.status == "completed"
+
+    def test_status_property_pending_when_both_false(self) -> None:
+        """Test status property returns 'pending' when both conditions are False."""
+        task = Task("Test task", has_default=False, is_completed=False)
+        assert task.status == "pending"
+
+    def test_get_tooltip_text_pending_status(self) -> None:
+        """Test get_tooltip_text returns 'User input required' for pending tasks."""
+        task = Task("Test task", has_default=False, is_completed=False)
+        assert task.get_tooltip_text() == "User input required"
+
+    def test_get_tooltip_text_completed_user_modified(self) -> None:
+        """Test get_tooltip_text returns 'Completed' for user-modified tasks."""
+        task = Task("Test task", is_completed=True)
+        task.user_modified = True
+        assert task.get_tooltip_text() == "Completed"
+
+    def test_get_tooltip_text_completed_not_user_modified(self) -> None:
+        """Test get_tooltip_text returns 'Use default' for non-user-modified completed tasks."""
+        task = Task("Test task", is_completed=True)
+        task.user_modified = False
+        assert task.get_tooltip_text() == "Use default"
+
+    def test_get_tooltip_text_has_default_not_user_modified(self) -> None:
+        """Test get_tooltip_text returns 'Use default' for tasks with defaults."""
+        task = Task("Test task", has_default=True)
+        task.user_modified = False
+        assert task.get_tooltip_text() == "Use default"
+
+    def test_truncate_path_short_path(self) -> None:
+        """Test _truncate_path returns unchanged string for short paths."""
+        task = Task("Test task")
+        short_path = "/short/path"
+        result = task._truncate_path(short_path)
+        assert result == short_path
+
+    def test_truncate_path_exactly_50_chars(self) -> None:
+        """Test _truncate_path returns unchanged string for exactly 50 character paths."""
+        task = Task("Test task")
+        path_50_chars = "/some/path/" + "x" * 39  # Creates exactly 50 chars
+        assert len(path_50_chars) == 50
+        result = task._truncate_path(path_50_chars)
+        assert result == path_50_chars
+
+    def test_truncate_path_long_with_separator(self) -> None:
+        """Test _truncate_path truncates at separator for long paths."""
+        task = Task("Test task")
+        long_path = "/very/long/path/that/exceeds/fifty/characters/and/has/more/directories/here"
+        result = task._truncate_path(long_path)
+
+        # Should find separator and truncate there
+        assert result.startswith("...")
+        assert "/" in result
+        assert len(result) < len(long_path)
+
+    def test_truncate_path_long_without_separator(self) -> None:
+        """Test _truncate_path truncates at end when no separator found."""
+        task = Task("Test task")
+        long_path = "a" * 80  # No path separators
+        result = task._truncate_path(long_path)
+
+        assert result.startswith("...")
+        assert result == "..." + long_path[-50:]
+
+    def test_truncate_path_long_with_separator_at_boundary(self) -> None:
+        """Test _truncate_path with separator exactly at search boundary."""
+        task = Task("Test task")
+        # Create path with separator at position 50
+        long_path = "a" * 50 + "/some/more/path"
+        result = task._truncate_path(long_path)
+
+        assert result.startswith("...")
+        assert result == "..." + long_path[50:]
+
+    def test_truncate_path_long_with_separator_beyond_search_range(self) -> None:
+        """Test _truncate_path when separator is beyond search range."""
+        task = Task("Test task")
+        # Create path with separator beyond 20-char search range
+        long_path = "a" * 71 + "/end"  # Separator at position 71 (50 + 21)
+        result = task._truncate_path(long_path)
+
+        # Should use fallback truncation
+        assert result.startswith("...")
+        assert result == "..." + long_path[-50:]
+
+    def test_get_display_text_pending_task(self) -> None:
+        """Test get_display_text returns base description for pending tasks."""
+        task = Task("Test description")
+        result = task.get_display_text()
+        assert result == "Test description"
+
+    def test_get_display_text_completed_with_configured_value(self) -> None:
+        """Test get_display_text shows configured value for completed tasks."""
+        task = Task("Set project name", is_completed=True)
+        task.configured_value = "MyProject"
+
+        result = task.get_display_text()
+        expected = "Set project name <span style='color: #FF8C00; font-style: italic;'>[MyProject]</span>"
+        assert result == expected
+
+    def test_get_display_text_completed_with_long_configured_value(self) -> None:
+        """Test get_display_text truncates long configured values."""
+        task = Task("Set directory", is_completed=True)
+        long_path = "/very/long/path/that/exceeds/fifty/characters/and/needs/truncation"
+        task.configured_value = long_path
+
+        result = task.get_display_text()
+        assert "Set directory" in result
+        assert "<span style='color: #FF8C00; font-style: italic;'>" in result
+        assert "..." in result  # Should be truncated
+
+    def test_get_display_text_completed_with_configured_values(self) -> None:
+        """Test get_display_text shows param count for multi-value tasks."""
+        task = Task("Configure settings", is_completed=True)
+        task.configured_values = {
+            "param1": "value1",
+            "param2": "value2",
+            "param3": "value3",
+        }
+
+        result = task.get_display_text()
+        expected = "Configure settings <span style='color: #FF8C00; font-style: italic;'>[3 params]</span>"
+        assert result == expected
+
+    def test_get_display_text_completed_with_default_value(self) -> None:
+        """Test get_display_text shows default value when no configured value."""
+        task = Task(
+            "Use default setting", has_default=True, default_value="default_val"
+        )
+
+        result = task.get_display_text()
+        expected = "Use default setting <span style='color: #FF8C00; font-style: italic;'>[default_val]</span>"
+        assert result == expected
+
+    def test_get_display_text_completed_with_long_default_value(self) -> None:
+        """Test get_display_text truncates long default values."""
+        task = Task("Use default path", has_default=True)
+        long_default = (
+            "/very/long/default/path/that/exceeds/fifty/characters/and/needs/truncation"
+        )
+        task.default_value = long_default
+
+        result = task.get_display_text()
+        assert "Use default path" in result
+        assert "<span style='color: #FF8C00; font-style: italic;'>" in result
+        assert "..." in result  # Should be truncated
+
+    def test_get_display_text_completed_no_values(self) -> None:
+        """Test get_display_text shows checkmark when no specific values."""
+        task = Task("Simple task", is_completed=True)
+        # No configured_value, configured_values, or default_value
+
+        result = task.get_display_text()
+        expected = (
+            "Simple task <span style='color: #FF8C00; font-style: italic;'>[✓]</span>"
+        )
+        assert result == expected
+
+    def test_get_display_text_completed_has_default_no_default_value(self) -> None:
+        """Test get_display_text shows checkmark when has_default but no default_value."""
+        task = Task("Task with default flag", has_default=True, default_value=None)
+
+        result = task.get_display_text()
+        expected = "Task with default flag <span style='color: #FF8C00; font-style: italic;'>[✓]</span>"
+        assert result == expected
+
+    def test_get_display_text_priority_configured_value_over_configured_values(
+        self,
+    ) -> None:
+        """Test get_display_text prioritizes configured_value over configured_values."""
+        task = Task("Priority test", is_completed=True)
+        task.configured_value = "single_value"
+        task.configured_values = {"param1": "value1", "param2": "value2"}
+
+        result = task.get_display_text()
+        expected = "Priority test <span style='color: #FF8C00; font-style: italic;'>[single_value]</span>"
+        assert result == expected
+
+    def test_get_display_text_priority_configured_values_over_default(self) -> None:
+        """Test get_display_text prioritizes configured_values over default_value."""
+        task = Task(
+            "Priority test",
+            has_default=True,
+            default_value="default_val",
+            is_completed=True,
+        )
+        task.configured_values = {"param1": "value1"}
+
+        result = task.get_display_text()
+        expected = "Priority test <span style='color: #FF8C00; font-style: italic;'>[1 params]</span>"
+        assert result == expected
 
 
 class TestClickableLabel:
