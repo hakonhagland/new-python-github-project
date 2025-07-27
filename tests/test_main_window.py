@@ -154,3 +154,90 @@ class TestMainWindow:
         # Verify fallback screen dimensions were used (lines 588-589)
         assert window.screen_width == 1920
         assert window.screen_height == 1080
+
+    def test_resize_event_with_valid_event(
+        self, qtbot: QtBot, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test resizeEvent method with a valid QResizeEvent.
+
+        This test verifies that resizeEvent correctly handles a valid resize event,
+        calls the parent implementation, extracts dimensions, and logs the information.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param get_config: Fixture to get a test Config instance
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock logging to capture log messages
+        mock_logging = mocker.patch("new_python_github_project.main_window.logging")
+
+        # Create MainWindow instance with mocked dependencies
+        config = get_config()
+        app = QApplication.instance()
+        assert app is not None and isinstance(app, QApplication)
+
+        mocker.patch(
+            "new_python_github_project.main_window.logging_handlers.setup_post_fork_logging"
+        )
+        mocker.patch.object(MainWindow, "_setup_ui")
+
+        window = MainWindow(app, config)
+        qtbot.addWidget(window)
+
+        # Create a mock QResizeEvent with specific dimensions
+        mock_event = mocker.MagicMock()
+        mock_size = mocker.MagicMock()
+        mock_size.width.return_value = 800
+        mock_size.height.return_value = 600
+        mock_event.size.return_value = mock_size
+
+        # Mock the parent resizeEvent to verify it's called
+        mock_super_resize = mocker.patch("PyQt6.QtWidgets.QMainWindow.resizeEvent")
+
+        # Call resizeEvent with the mock event
+        window.resizeEvent(mock_event)
+
+        # Verify parent resizeEvent was called with the event
+        mock_super_resize.assert_called_once_with(mock_event)
+
+        # Verify logging was called with the correct message
+        mock_logging.info.assert_called_once_with("Window resized to: 800x600 pixels")
+
+    def test_resize_event_with_none_event(
+        self, qtbot: QtBot, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test resizeEvent method with None event.
+
+        This test verifies that resizeEvent correctly handles a None event by
+        only calling the parent implementation without attempting to log dimensions.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param get_config: Fixture to get a test Config instance
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock logging to verify it's not called
+        mock_logging = mocker.patch("new_python_github_project.main_window.logging")
+
+        # Create MainWindow instance with mocked dependencies
+        config = get_config()
+        app = QApplication.instance()
+        assert app is not None and isinstance(app, QApplication)
+
+        mocker.patch(
+            "new_python_github_project.main_window.logging_handlers.setup_post_fork_logging"
+        )
+        mocker.patch.object(MainWindow, "_setup_ui")
+
+        window = MainWindow(app, config)
+        qtbot.addWidget(window)
+
+        # Mock the parent resizeEvent to verify it's called
+        mock_super_resize = mocker.patch("PyQt6.QtWidgets.QMainWindow.resizeEvent")
+
+        # Call resizeEvent with None
+        window.resizeEvent(None)
+
+        # Verify parent resizeEvent was called with None
+        mock_super_resize.assert_called_once_with(None)
+
+        # Verify logging was NOT called (since event is None)
+        mock_logging.info.assert_not_called()
