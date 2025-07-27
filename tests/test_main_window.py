@@ -241,3 +241,270 @@ class TestMainWindow:
 
         # Verify logging was NOT called (since event is None)
         mock_logging.info.assert_not_called()
+
+    def test_add_log_message(
+        self, qtbot: QtBot, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test add_log_message method forwards messages to terminal frame.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param get_config: Fixture to get a test Config instance
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Create MainWindow instance with mocked dependencies
+        config = get_config()
+        app = QApplication.instance()
+        assert app is not None and isinstance(app, QApplication)
+
+        mocker.patch(
+            "new_python_github_project.main_window.logging_handlers.setup_post_fork_logging"
+        )
+        mocker.patch.object(MainWindow, "_setup_ui")
+
+        window = MainWindow(app, config)
+        qtbot.addWidget(window)
+
+        # Mock the terminal_frame and its add_log_message method
+        mock_terminal_frame = mocker.MagicMock()
+        window.terminal_frame = mock_terminal_frame
+
+        # Call add_log_message
+        test_message = "Test log message"
+        window.add_log_message(test_message)
+
+        # Verify the message was forwarded to terminal_frame
+        mock_terminal_frame.add_log_message.assert_called_once_with(test_message)
+
+    def test_closeEvent(
+        self, qtbot: QtBot, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test closeEvent method logs and quits application.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param get_config: Fixture to get a test Config instance
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock logging
+        mock_logging = mocker.patch("new_python_github_project.main_window.logging")
+
+        # Create MainWindow instance with mocked dependencies
+        config = get_config()
+        app = QApplication.instance()
+        assert app is not None and isinstance(app, QApplication)
+
+        mocker.patch(
+            "new_python_github_project.main_window.logging_handlers.setup_post_fork_logging"
+        )
+        mocker.patch.object(MainWindow, "_setup_ui")
+
+        window = MainWindow(app, config)
+        qtbot.addWidget(window)
+
+        # Mock app.quit to verify it's called
+        mock_quit = mocker.patch.object(window.app, "quit")
+
+        # Create a mock close event
+        mock_event = mocker.MagicMock()
+
+        # Call closeEvent
+        window.closeEvent(mock_event)
+
+        # Verify logging was called
+        mock_logging.info.assert_called_once_with("Window close requested")
+
+        # Verify event was accepted
+        mock_event.accept.assert_called_once()
+
+        # Verify app.quit was called
+        mock_quit.assert_called_once()
+
+    def test_log_window_size_info_with_adjustment(
+        self, qtbot: QtBot, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test _log_window_size_info when window size was adjusted.
+
+        This covers the conditional logging when window size had to be adjusted
+        to fit the screen (line 644).
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param get_config: Fixture to get a test Config instance
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock logging
+        mock_logging = mocker.patch("new_python_github_project.main_window.logging")
+
+        # Create MainWindow instance with mocked dependencies
+        config = get_config()
+        app = QApplication.instance()
+        assert app is not None and isinstance(app, QApplication)
+
+        mocker.patch(
+            "new_python_github_project.main_window.logging_handlers.setup_post_fork_logging"
+        )
+        mocker.patch.object(MainWindow, "_setup_ui")
+
+        window = MainWindow(app, config)
+        qtbot.addWidget(window)
+
+        # Set up window dimensions that would trigger the adjustment message
+        # Make actual window smaller than config defaults to trigger line 644
+        window.screen_width = 1920
+        window.screen_height = 1080
+        window.window_width = 800  # Smaller than default (probably 1024)
+        window.window_height = 600  # Smaller than default (probably 768)
+
+        # Call _log_window_size_info directly
+        window._log_window_size_info()
+
+        # Verify all logging calls were made
+        expected_calls = [
+            mocker.call("Screen size: 1920x1080"),
+            mocker.call("Window size: 800x600"),
+            mocker.call("Window size adjusted to fit screen"),  # This is line 644
+        ]
+        mock_logging.info.assert_has_calls(expected_calls)
+
+    def test_set_window_icon_with_app_icon(
+        self, qtbot: QtBot, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test _set_window_icon when app icon is available.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param get_config: Fixture to get a test Config instance
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock logging
+        mock_logging = mocker.patch("new_python_github_project.main_window.logging")
+
+        # Create MainWindow instance with mocked dependencies
+        config = get_config()
+        app = QApplication.instance()
+        assert app is not None and isinstance(app, QApplication)
+
+        mocker.patch(
+            "new_python_github_project.main_window.logging_handlers.setup_post_fork_logging"
+        )
+        mocker.patch.object(MainWindow, "_setup_ui")
+
+        window = MainWindow(app, config)
+        qtbot.addWidget(window)
+
+        # Mock app icon to be valid (not null)
+        mock_app_icon = mocker.MagicMock()
+        mock_app_icon.isNull.return_value = False
+        mocker.patch.object(window.app, "windowIcon", return_value=mock_app_icon)
+
+        # Mock setWindowIcon to verify it's called
+        mock_set_icon = mocker.patch.object(window, "setWindowIcon")
+
+        # Call _set_window_icon
+        window._set_window_icon()
+
+        # Verify app icon was used
+        mock_set_icon.assert_called_once_with(mock_app_icon)
+        mock_logging.info.assert_called_once_with(
+            "Window icon set from application icon"
+        )
+
+    def test_set_window_icon_fallback(
+        self, qtbot: QtBot, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test _set_window_icon fallback when no app icon available.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param get_config: Fixture to get a test Config instance
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock logging
+        mock_logging = mocker.patch("new_python_github_project.main_window.logging")
+
+        # Create MainWindow instance with mocked dependencies
+        config = get_config()
+        app = QApplication.instance()
+        assert app is not None and isinstance(app, QApplication)
+
+        mocker.patch(
+            "new_python_github_project.main_window.logging_handlers.setup_post_fork_logging"
+        )
+        mocker.patch.object(MainWindow, "_setup_ui")
+
+        window = MainWindow(app, config)
+        qtbot.addWidget(window)
+
+        # Mock app icon to be null (not available)
+        mock_app_icon = mocker.MagicMock()
+        mock_app_icon.isNull.return_value = True
+        mocker.patch.object(window.app, "windowIcon", return_value=mock_app_icon)
+
+        # Mock QIcon.fromTheme and setWindowIcon
+        mock_fallback_icon = mocker.MagicMock()
+        mock_from_theme = mocker.patch(
+            "new_python_github_project.main_window.QIcon.fromTheme",
+            return_value=mock_fallback_icon,
+        )
+        mock_set_icon = mocker.patch.object(window, "setWindowIcon")
+
+        # Call _set_window_icon
+        window._set_window_icon()
+
+        # Verify fallback icon was used
+        mock_from_theme.assert_called_once_with("applications-python")
+        mock_set_icon.assert_called_once_with(mock_fallback_icon)
+        mock_logging.info.assert_called_once_with(
+            "Window icon set to fallback theme icon"
+        )
+
+    def test_setup_menu(
+        self, qtbot: QtBot, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test _setup_menu creates menu bar with quit action.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param get_config: Fixture to get a test Config instance
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Create MainWindow instance with mocked dependencies
+        config = get_config()
+        app = QApplication.instance()
+        assert app is not None and isinstance(app, QApplication)
+
+        mocker.patch(
+            "new_python_github_project.main_window.logging_handlers.setup_post_fork_logging"
+        )
+        mocker.patch.object(MainWindow, "_setup_ui")
+
+        window = MainWindow(app, config)
+        qtbot.addWidget(window)
+
+        # Mock menu bar and file menu
+        mock_file_menu = mocker.MagicMock()
+        mock_menubar = mocker.MagicMock()
+        mock_menubar.addMenu.return_value = mock_file_menu
+        mock_menubar_method = mocker.patch.object(
+            window, "menuBar", return_value=mock_menubar
+        )
+
+        # Mock QAction creation
+        mock_quit_action = mocker.MagicMock()
+        mock_qaction = mocker.patch(
+            "new_python_github_project.main_window.QAction",
+            return_value=mock_quit_action,
+        )
+
+        # Call _setup_menu
+        window._setup_menu()
+
+        # Verify menu bar was accessed
+        mock_menubar_method.assert_called_once()
+
+        # Verify File menu was created
+        mock_menubar.addMenu.assert_called_once_with("File")
+
+        # Verify Quit action was created and configured
+        mock_qaction.assert_called_once_with("Quit", window)
+        mock_quit_action.setShortcut.assert_called_once_with("Ctrl+Q")
+        mock_quit_action.setStatusTip.assert_called_once_with("Quit the application")
+        mock_quit_action.triggered.connect.assert_called_once_with(window.close)
+
+        # Verify action was added to file menu
+        mock_file_menu.addAction.assert_called_once_with(mock_quit_action)
