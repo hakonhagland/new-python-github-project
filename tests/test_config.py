@@ -373,3 +373,93 @@ class TestConfig:
 
         result = config.config.getlist(test_section, "test_list")
         assert result == ["item1", "item2", "item3"]
+
+    def test_get_method_delegation(self, get_config: GetConfig) -> None:
+        """Test that get() method properly delegates to ConfigParser.get()."""
+        config = get_config()
+
+        # Add a test section and value
+        test_section = "TEST"
+        if not config.config.has_section(test_section):
+            config.config.add_section(test_section)
+        config.config.set(test_section, "test_option", "test_value")
+
+        # Test the delegation method
+        result = config.get(test_section, "test_option")
+        assert result == "test_value"
+
+        # Test with additional kwargs
+        result_with_fallback = config.get(
+            test_section, "nonexistent", fallback="default"
+        )
+        assert result_with_fallback == "default"
+
+    def test_getboolean_method_delegation(self, get_config: GetConfig) -> None:
+        """Test that getboolean() method properly delegates to ConfigParser.getboolean()."""
+        config = get_config()
+
+        # Add a test section and boolean values
+        test_section = "TEST"
+        if not config.config.has_section(test_section):
+            config.config.add_section(test_section)
+        config.config.set(test_section, "bool_true", "true")
+        config.config.set(test_section, "bool_false", "false")
+
+        # Test the delegation method
+        result_true = config.getboolean(test_section, "bool_true")
+        assert result_true is True
+
+        result_false = config.getboolean(test_section, "bool_false")
+        assert result_false is False
+
+        # Test with additional kwargs
+        result_with_fallback = config.getboolean(
+            test_section, "nonexistent", fallback=True
+        )
+        assert result_with_fallback is True
+
+    def test_getfloat_method_delegation(self, get_config: GetConfig) -> None:
+        """Test that getfloat() method properly delegates to ConfigParser.getfloat()."""
+        config = get_config()
+
+        # Add a test section and float values
+        test_section = "TEST"
+        if not config.config.has_section(test_section):
+            config.config.add_section(test_section)
+        config.config.set(test_section, "float_value", "3.14")
+        config.config.set(test_section, "int_as_float", "42")
+
+        # Test the delegation method
+        result_float = config.getfloat(test_section, "float_value")
+        assert result_float == 3.14
+
+        result_int = config.getfloat(test_section, "int_as_float")
+        assert result_int == 42.0
+
+        # Test with additional kwargs
+        result_with_fallback = config.getfloat(
+            test_section, "nonexistent", fallback=1.5
+        )
+        assert result_with_fallback == 1.5
+
+    def test_getint_method_delegation(self, get_config: GetConfig) -> None:
+        """Test that getint() method properly delegates to ConfigParser.getint()."""
+        config = get_config()
+
+        # Add a test section and integer values
+        test_section = "TEST"
+        if not config.config.has_section(test_section):
+            config.config.add_section(test_section)
+        config.config.set(test_section, "int_value", "42")
+        config.config.set(test_section, "float_as_int", "3")
+
+        # Test the delegation method
+        result_int = config.getint(test_section, "int_value")
+        assert result_int == 42
+
+        result_float = config.getint(test_section, "float_as_int")
+        assert result_float == 3
+
+        # Test with additional kwargs
+        result_with_fallback = config.getint(test_section, "nonexistent", fallback=99)
+        assert result_with_fallback == 99
