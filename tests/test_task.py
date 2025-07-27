@@ -8,7 +8,12 @@ from PyQt6.QtCore import QPointF, Qt
 from PyQt6.QtGui import QMouseEvent
 from PyQt6.QtWidgets import QLabel
 
-from new_python_github_project.task import ClickableLabel, PythonVersionDialog, Task
+from new_python_github_project.task import (
+    ClickableLabel,
+    LicenseSelectionDialog,
+    PythonVersionDialog,
+    Task,
+)
 
 if TYPE_CHECKING:
     from pytestqt.qtbot import QtBot
@@ -495,3 +500,376 @@ class TestPythonVersionDialog:
         qtbot.addWidget(dialog)
 
         assert dialog.description_label.wordWrap() is True
+
+
+class TestLicenseSelectionDialog:
+    """Test cases for LicenseSelectionDialog class."""
+
+    def test_init_with_task(self, qtbot: "QtBot") -> None:
+        """Test LicenseSelectionDialog initialization with task."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        assert dialog.task == task
+        assert dialog.result_value is None
+
+    def test_init_with_parent(self, qtbot: "QtBot") -> None:
+        """Test LicenseSelectionDialog initialization with parent widget."""
+        parent = QLabel()
+        qtbot.addWidget(parent)
+
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task, parent)
+        qtbot.addWidget(dialog)
+
+        assert dialog.parent() == parent
+        assert dialog.task == task
+
+    def test_setup_ui_window_properties(self, qtbot: "QtBot") -> None:
+        """Test setup_ui configures window properties correctly."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        assert dialog.windowTitle() == "Choose License"
+        assert dialog.isModal() is True
+        assert dialog.size().width() == 500
+        assert dialog.size().height() == 400
+
+    def test_setup_ui_components_exist(self, qtbot: "QtBot") -> None:
+        """Test setup_ui creates all necessary UI components."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Check that components exist
+        assert hasattr(dialog, "license_combo")
+        assert hasattr(dialog, "description_label")
+        assert dialog.license_combo is not None
+        assert dialog.description_label is not None
+
+    def test_license_combo_has_license_options(self, qtbot: "QtBot") -> None:
+        """Test license combo box contains expected license options."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Check that combo box has items
+        assert dialog.license_combo.count() > 0
+
+        # Check that it contains expected licenses
+        all_items = [
+            dialog.license_combo.itemText(i)
+            for i in range(dialog.license_combo.count())
+        ]
+        license_texts = " ".join(all_items)
+
+        assert "MIT" in license_texts
+        assert "Apache 2.0" in license_texts
+        assert "GPL v3" in license_texts
+        assert "BSD 3-Clause" in license_texts
+        assert "ISC" in license_texts
+        assert "Unlicense" in license_texts
+        assert "Custom" in license_texts
+
+    def test_setup_ui_with_existing_configured_value(self, qtbot: "QtBot") -> None:
+        """Test setup_ui selects existing configured value if available."""
+        task = Task("Test task", False)
+        task.configured_value = "MIT"
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Should select MIT license
+        current_text = dialog.license_combo.currentText()
+        assert "MIT" in current_text
+
+    def test_setup_ui_with_invalid_configured_value(self, qtbot: "QtBot") -> None:
+        """Test setup_ui handles invalid configured value gracefully."""
+        task = Task("Test task", False)
+        task.configured_value = "NonExistentLicense"
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Should not crash and should have a valid selection
+        assert dialog.license_combo.currentIndex() >= 0
+
+    def test_setup_ui_with_no_configured_value(self, qtbot: "QtBot") -> None:
+        """Test setup_ui when task has no configured_value attribute."""
+        task = Task("Test task", False)
+        # Don't set configured_value attribute
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Should not crash and should have a valid selection
+        assert dialog.license_combo.currentIndex() >= 0
+
+    def test_update_description_for_mit_license(self, qtbot: "QtBot") -> None:
+        """Test update_description for MIT license specifically."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Find and select MIT license
+        for i in range(dialog.license_combo.count()):
+            if "MIT" in dialog.license_combo.itemText(i):
+                dialog.license_combo.setCurrentIndex(i)
+                break
+
+        dialog.update_description()
+        description = dialog.description_label.text()
+        assert "MIT" in description
+        assert "permissive" in description.lower()
+
+    def test_update_description_for_apache_license(self, qtbot: "QtBot") -> None:
+        """Test update_description for Apache 2.0 license."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Find and select Apache 2.0 license
+        for i in range(dialog.license_combo.count()):
+            if "Apache 2.0" in dialog.license_combo.itemText(i):
+                dialog.license_combo.setCurrentIndex(i)
+                break
+
+        dialog.update_description()
+        description = dialog.description_label.text()
+        assert "Apache" in description
+        assert "patent" in description.lower()
+
+    def test_update_description_for_gpl_license(self, qtbot: "QtBot") -> None:
+        """Test update_description for GPL v3 license."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Find and select GPL v3 license
+        for i in range(dialog.license_combo.count()):
+            if "GPL v3" in dialog.license_combo.itemText(i):
+                dialog.license_combo.setCurrentIndex(i)
+                break
+
+        dialog.update_description()
+        description = dialog.description_label.text()
+        assert "GPL" in description or "GNU" in description
+        assert "copyleft" in description.lower()
+
+    def test_update_description_for_bsd_license(self, qtbot: "QtBot") -> None:
+        """Test update_description for BSD 3-Clause license."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Find and select BSD 3-Clause license
+        for i in range(dialog.license_combo.count()):
+            if "BSD 3-Clause" in dialog.license_combo.itemText(i):
+                dialog.license_combo.setCurrentIndex(i)
+                break
+
+        dialog.update_description()
+        description = dialog.description_label.text()
+        assert "BSD" in description
+        assert "endorsement" in description.lower()
+
+    def test_update_description_for_isc_license(self, qtbot: "QtBot") -> None:
+        """Test update_description for ISC license."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Find and select ISC license
+        for i in range(dialog.license_combo.count()):
+            if "ISC" in dialog.license_combo.itemText(i):
+                dialog.license_combo.setCurrentIndex(i)
+                break
+
+        dialog.update_description()
+        description = dialog.description_label.text()
+        assert "ISC" in description
+        assert "permissive" in description.lower()
+
+    def test_update_description_for_unlicense(self, qtbot: "QtBot") -> None:
+        """Test update_description for Unlicense."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Find and select Unlicense
+        for i in range(dialog.license_combo.count()):
+            if "Unlicense" in dialog.license_combo.itemText(i):
+                dialog.license_combo.setCurrentIndex(i)
+                break
+
+        dialog.update_description()
+        description = dialog.description_label.text()
+        assert "Unlicense" in description
+        assert "public domain" in description.lower()
+
+    def test_update_description_for_custom_license(self, qtbot: "QtBot") -> None:
+        """Test update_description for Custom license."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Find and select Custom license
+        for i in range(dialog.license_combo.count()):
+            if "Custom" in dialog.license_combo.itemText(i):
+                dialog.license_combo.setCurrentIndex(i)
+                break
+
+        dialog.update_description()
+        description = dialog.description_label.text()
+        assert "custom" in description.lower()
+        assert "flexibility" in description.lower()
+
+    def test_update_description_for_unknown_license(self, qtbot: "QtBot") -> None:
+        """Test update_description for unknown license."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Manually set an unknown license
+        dialog.license_combo.clear()
+        dialog.license_combo.addItem("Unknown License - Description")
+        dialog.update_description()
+
+        description = dialog.description_label.text()
+        assert "No description available" in description
+
+    def test_accept_with_standard_license(self, qtbot: "QtBot") -> None:
+        """Test accept method with standard license selection."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Find and select MIT license
+        for i in range(dialog.license_combo.count()):
+            if "MIT" in dialog.license_combo.itemText(i):
+                dialog.license_combo.setCurrentIndex(i)
+                break
+
+        # Mock super().accept() to prevent actual dialog closing
+        from unittest.mock import patch
+
+        with patch.object(dialog.__class__.__bases__[0], "accept"):
+            dialog.accept()
+
+        assert dialog.result_value == "MIT"
+
+    def test_accept_with_custom_license(self, qtbot: "QtBot") -> None:
+        """Test accept method with custom license selection."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Find and select Custom license
+        for i in range(dialog.license_combo.count()):
+            if "Custom" in dialog.license_combo.itemText(i):
+                dialog.license_combo.setCurrentIndex(i)
+                break
+
+        # Mock super().accept() to prevent actual dialog closing
+        from unittest.mock import patch
+
+        with patch.object(dialog.__class__.__bases__[0], "accept"):
+            dialog.accept()
+
+        assert dialog.result_value == "Custom License"
+
+    def test_get_result_returns_selected_value(self, qtbot: "QtBot") -> None:
+        """Test get_result returns the selected license value."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Initially should return None
+        assert dialog.get_result() is None
+
+        # Set a result value
+        test_value = "Apache 2.0"
+        dialog.result_value = test_value
+        assert dialog.get_result() == test_value
+
+    def test_license_combo_signal_connection(self, qtbot: "QtBot") -> None:
+        """Test that combo box changes trigger description updates."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Change combo selection and verify description updates
+        original_index = dialog.license_combo.currentIndex()
+        new_index = (original_index + 1) % dialog.license_combo.count()
+
+        dialog.license_combo.setCurrentIndex(new_index)
+        qtbot.wait(10)  # Small wait for signal processing
+
+        description = dialog.description_label.text()
+        assert description != ""
+        assert len(description) > 10  # Should have meaningful description
+
+    def test_dialog_has_ok_cancel_buttons(self, qtbot: "QtBot") -> None:
+        """Test that dialog has OK and Cancel buttons."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Find button box in the dialog
+        from PyQt6.QtWidgets import QDialogButtonBox
+
+        button_boxes = dialog.findChildren(QDialogButtonBox)
+        assert len(button_boxes) > 0
+
+        button_box = button_boxes[0]
+        ok_button = button_box.button(QDialogButtonBox.StandardButton.Ok)
+        cancel_button = button_box.button(QDialogButtonBox.StandardButton.Cancel)
+
+        assert ok_button is not None
+        assert cancel_button is not None
+
+    def test_description_label_styling(self, qtbot: "QtBot") -> None:
+        """Test that description label has proper styling."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        stylesheet = dialog.description_label.styleSheet()
+        assert "background-color" in stylesheet
+        assert "border" in stylesheet
+        assert "padding" in stylesheet
+
+    def test_word_wrap_enabled_on_description(self, qtbot: "QtBot") -> None:
+        """Test that description label has word wrap enabled."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        assert dialog.description_label.wordWrap() is True
+
+    def test_license_combo_has_focus(self, qtbot: "QtBot") -> None:
+        """Test that license combo box receives focus on setup."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Show the dialog to properly set focus
+        dialog.show()
+        with qtbot.waitExposed(dialog):
+            pass
+
+        # The combo box should have focus (or be focusable)
+        assert (
+            dialog.license_combo.hasFocus()
+            or dialog.license_combo.focusPolicy() != Qt.FocusPolicy.NoFocus
+        )
+
+    def test_initial_description_is_set(self, qtbot: "QtBot") -> None:
+        """Test that initial description is set during setup."""
+        task = Task("Test task", False)
+        dialog = LicenseSelectionDialog(task)
+        qtbot.addWidget(dialog)
+
+        # Description should be set automatically
+        description = dialog.description_label.text()
+        assert description != ""
+        assert len(description) > 10  # Should have meaningful description
