@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
-    from .main_window import MainWindow
+    from .main_window import MainWindow  # pragma: no cover
 from PyQt6.QtCore import QObject, pyqtSignal
 
 
