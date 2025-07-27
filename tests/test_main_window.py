@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QApplication
 from pytest_mock.plugin import MockerFixture
 from pytestqt.qtbot import QtBot
 
-from new_python_github_project.main_window import MainWindow
+from new_python_github_project.main_window import MainWindow, TerminalFrame
 from .common import GetConfig
 
 
@@ -508,3 +508,152 @@ class TestMainWindow:
 
         # Verify action was added to file menu
         mock_file_menu.addAction.assert_called_once_with(mock_quit_action)
+
+
+class TestTerminalFrame:
+    """Test cases for TerminalFrame class."""
+
+    def test_constructor(self, qtbot: QtBot, mocker: MockerFixture) -> None:
+        """Test TerminalFrame constructor initializes correctly.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock the setup_ui and load_sample_output methods to isolate constructor
+        mock_setup_ui = mocker.patch.object(TerminalFrame, "setup_ui")
+        mock_load_sample = mocker.patch.object(TerminalFrame, "load_sample_output")
+
+        # Create TerminalFrame instance
+        terminal = TerminalFrame()
+        qtbot.addWidget(terminal)
+
+        # Verify setup methods were called
+        mock_setup_ui.assert_called_once()
+        mock_load_sample.assert_called_once()
+
+    def test_setup_ui(self, qtbot: QtBot, mocker: MockerFixture) -> None:
+        """Test TerminalFrame setup_ui creates UI components correctly.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock load_sample_output to isolate setup_ui testing
+        mocker.patch.object(TerminalFrame, "load_sample_output")
+
+        # Create TerminalFrame instance
+        terminal = TerminalFrame()
+        qtbot.addWidget(terminal)
+
+        # Verify UI components were created
+        assert hasattr(terminal, "terminal")
+        assert terminal.terminal is not None
+
+        # Verify terminal properties
+        assert terminal.terminal.isReadOnly()
+        assert (
+            terminal.terminal.lineWrapMode()
+            == terminal.terminal.LineWrapMode.WidgetWidth
+        )
+
+        # Verify frame style was set
+        assert terminal.frameStyle() == terminal.Shape.Box
+
+    def test_load_sample_output(self, qtbot: QtBot, mocker: MockerFixture) -> None:
+        """Test TerminalFrame load_sample_output logs sample messages.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock logging to capture log calls
+        mock_logging = mocker.patch("new_python_github_project.main_window.logging")
+
+        # Mock setup_ui to isolate load_sample_output testing
+        mocker.patch.object(TerminalFrame, "setup_ui")
+
+        # Create TerminalFrame instance - this will call load_sample_output
+        terminal = TerminalFrame()
+        qtbot.addWidget(terminal)
+
+        # Verify logging.info was called for each sample message
+        assert mock_logging.info.call_count == 10  # 10 sample messages
+
+        # Verify some specific sample messages were logged
+        expected_calls = [
+            mocker.call("Application started successfully"),
+            mocker.call("Loading configuration..."),
+            mocker.call("Configuration loaded successfully"),
+            mocker.call("Ready for user interaction"),
+            mocker.call("System status: OK"),
+        ]
+        mock_logging.info.assert_has_calls(expected_calls, any_order=True)
+
+    def test_add_log_message(self, qtbot: QtBot, mocker: MockerFixture) -> None:
+        """Test TerminalFrame add_log_message adds timestamped messages.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock load_sample_output to avoid sample messages during testing
+        mocker.patch.object(TerminalFrame, "load_sample_output")
+
+        # Create TerminalFrame instance
+        terminal = TerminalFrame()
+        qtbot.addWidget(terminal)
+
+        # Mock datetime to control timestamp (it's imported inside the method)
+        mock_datetime = mocker.MagicMock()
+        mock_datetime.now.return_value.strftime.return_value = "12:34:56"
+        mocker.patch("datetime.datetime", mock_datetime)
+
+        # Mock the key terminal methods we want to verify
+        mock_insert_text = mocker.patch.object(terminal.terminal, "insertPlainText")
+        mock_ensure_visible = mocker.patch.object(
+            terminal.terminal, "ensureCursorVisible"
+        )
+
+        # Call add_log_message
+        test_message = "Test log message"
+        terminal.add_log_message(test_message)
+
+        # Verify formatted message was inserted with correct timestamp
+        expected_formatted = "[12:34:56] Test log message\n"
+        mock_insert_text.assert_called_once_with(expected_formatted)
+
+        # Verify auto-scroll was called
+        mock_ensure_visible.assert_called_once()
+
+    def test_add_log_message_real_timestamp(
+        self, qtbot: QtBot, mocker: MockerFixture
+    ) -> None:
+        """Test TerminalFrame add_log_message with real timestamp formatting.
+
+        This test verifies the timestamp format without mocking datetime.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock load_sample_output to avoid sample messages during testing
+        mocker.patch.object(TerminalFrame, "load_sample_output")
+
+        # Create TerminalFrame instance
+        terminal = TerminalFrame()
+        qtbot.addWidget(terminal)
+
+        # Mock only the text insertion to capture the formatted message
+        mock_insert_text = mocker.patch.object(terminal.terminal, "insertPlainText")
+
+        # Call add_log_message with real timestamp
+        test_message = "Real timestamp test"
+        terminal.add_log_message(test_message)
+
+        # Verify formatted message has correct structure
+        mock_insert_text.assert_called_once()
+        formatted_message = mock_insert_text.call_args[0][0]
+
+        # Check message format: [HH:MM:SS] message\n
+        import re
+
+        timestamp_pattern = r"^\[\d{2}:\d{2}:\d{2}\] Real timestamp test\n$"
+        assert re.match(timestamp_pattern, formatted_message), (
+            f"Unexpected format: {formatted_message}"
+        )
