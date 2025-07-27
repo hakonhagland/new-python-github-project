@@ -2,7 +2,7 @@
 
 import re
 
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox, QPushButton
 from pytest_mock.plugin import MockerFixture
 from pytestqt.qtbot import QtBot
 
@@ -697,8 +697,6 @@ class TestActionButtonsFrame:
         assert action_frame.frameStyle() == action_frame.Shape.Box
 
         # Find the create button by its text - use QPushButton directly
-        from PyQt6.QtWidgets import QPushButton
-
         buttons = action_frame.findChildren(QPushButton)
         create_button = None
         for button in buttons:
@@ -853,8 +851,6 @@ class TestActionButtonsFrame:
         assert "Please complete these tasks and try again." in message
 
         # Check the button type
-        from PyQt6.QtWidgets import QMessageBox
-
         assert args[3] == QMessageBox.StandardButton.Ok
 
 
