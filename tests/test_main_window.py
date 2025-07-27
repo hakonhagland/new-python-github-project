@@ -1,5 +1,7 @@
 """Unit tests for main_window.py."""
 
+import re
+
 from PyQt6.QtWidgets import QApplication
 from pytest_mock.plugin import MockerFixture
 from pytestqt.qtbot import QtBot
@@ -651,8 +653,6 @@ class TestTerminalFrame:
         formatted_message = mock_insert_text.call_args[0][0]
 
         # Check message format: [HH:MM:SS] message\n
-        import re
-
         timestamp_pattern = r"^\[\d{2}:\d{2}:\d{2}\] Real timestamp test\n$"
         assert re.match(timestamp_pattern, formatted_message), (
             f"Unexpected format: {formatted_message}"
