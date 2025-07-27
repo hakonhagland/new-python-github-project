@@ -6,7 +6,12 @@ from PyQt6.QtWidgets import QApplication
 from pytest_mock.plugin import MockerFixture
 from pytestqt.qtbot import QtBot
 
-from new_python_github_project.main_window import MainWindow, TerminalFrame
+from new_python_github_project.main_window import (
+    ActionButtonsFrame,
+    MainWindow,
+    TaskListFrame,
+    TerminalFrame,
+)
 
 from .common import GetConfig
 
@@ -658,3 +663,303 @@ class TestTerminalFrame:
         assert re.match(timestamp_pattern, formatted_message), (
             f"Unexpected format: {formatted_message}"
         )
+
+
+class TestActionButtonsFrame:
+    """Test cases for ActionButtonsFrame class."""
+
+    def test_constructor(self, qtbot: QtBot, mocker: MockerFixture) -> None:
+        """Test ActionButtonsFrame constructor initializes correctly.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock the setup_ui method to isolate constructor testing
+        mock_setup_ui = mocker.patch.object(ActionButtonsFrame, "setup_ui")
+
+        # Create ActionButtonsFrame instance
+        action_frame = ActionButtonsFrame()
+        qtbot.addWidget(action_frame)
+
+        # Verify setup method was called
+        mock_setup_ui.assert_called_once()
+
+    def test_setup_ui(self, qtbot: QtBot) -> None:
+        """Test ActionButtonsFrame setup_ui creates UI components correctly.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        """
+        # Create ActionButtonsFrame instance
+        action_frame = ActionButtonsFrame()
+        qtbot.addWidget(action_frame)
+
+        # Verify frame style was set
+        assert action_frame.frameStyle() == action_frame.Shape.Box
+
+        # Find the create button by its text - use QPushButton directly
+        from PyQt6.QtWidgets import QPushButton
+
+        buttons = action_frame.findChildren(QPushButton)
+        create_button = None
+        for button in buttons:
+            if button.text() == "Create":
+                create_button = button
+                break
+
+        # Verify create button exists and has correct properties
+        assert create_button is not None, "Create button should exist"
+        assert create_button.text() == "Create"
+        assert create_button.minimumHeight() == 30
+
+        # Verify button has the expected styling (check for key style properties)
+        style_sheet = create_button.styleSheet()
+        assert "#4CAF50" in style_sheet  # Background color
+        assert "white" in style_sheet  # Text color
+        assert "border-radius: 4px" in style_sheet  # Border radius
+
+    def test_on_create_clicked_with_incomplete_tasks(
+        self, qtbot: QtBot, mocker: MockerFixture
+    ) -> None:
+        """Test on_create_clicked when there are incomplete required tasks.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Create ActionButtonsFrame instance
+        action_frame = ActionButtonsFrame()
+        qtbot.addWidget(action_frame)
+
+        # Mock the window() method to return a fake MainWindow
+        mock_main_window = mocker.MagicMock()
+        mock_task_list = mocker.MagicMock()
+        mock_main_window.task_list = mock_task_list
+
+        # Create mock incomplete tasks
+        mock_task1 = mocker.MagicMock()
+        mock_task1.description = "Set project name"
+        mock_task2 = mocker.MagicMock()
+        mock_task2.description = "Set project description"
+        incomplete_tasks = [mock_task1, mock_task2]
+
+        mock_task_list.get_incomplete_required_tasks.return_value = incomplete_tasks
+        mocker.patch.object(action_frame, "window", return_value=mock_main_window)
+
+        # Mock the show_incomplete_tasks_dialog method
+        mock_show_dialog = mocker.patch.object(
+            action_frame, "show_incomplete_tasks_dialog"
+        )
+
+        # Call on_create_clicked
+        action_frame.on_create_clicked()
+
+        # Verify get_incomplete_required_tasks was called
+        mock_task_list.get_incomplete_required_tasks.assert_called_once()
+
+        # Verify show_incomplete_tasks_dialog was called with incomplete tasks
+        mock_show_dialog.assert_called_once_with(incomplete_tasks)
+
+    def test_on_create_clicked_with_all_tasks_complete(
+        self, qtbot: QtBot, mocker: MockerFixture
+    ) -> None:
+        """Test on_create_clicked when all required tasks are completed.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock logging to capture log messages
+        mock_logging = mocker.patch("new_python_github_project.main_window.logging")
+
+        # Create ActionButtonsFrame instance
+        action_frame = ActionButtonsFrame()
+        qtbot.addWidget(action_frame)
+
+        # Mock the window() method to return a fake MainWindow
+        mock_main_window = mocker.MagicMock()
+        mock_task_list = mocker.MagicMock()
+        mock_main_window.task_list = mock_task_list
+
+        # No incomplete tasks (all completed)
+        mock_task_list.get_incomplete_required_tasks.return_value = []
+        mocker.patch.object(action_frame, "window", return_value=mock_main_window)
+
+        # Mock the show_incomplete_tasks_dialog method
+        mock_show_dialog = mocker.patch.object(
+            action_frame, "show_incomplete_tasks_dialog"
+        )
+
+        # Call on_create_clicked
+        action_frame.on_create_clicked()
+
+        # Verify get_incomplete_required_tasks was called
+        mock_task_list.get_incomplete_required_tasks.assert_called_once()
+
+        # Verify show_incomplete_tasks_dialog was NOT called
+        mock_show_dialog.assert_not_called()
+
+        # Verify all expected log messages were called
+        expected_calls = [
+            mocker.call(
+                "✓ All tasks completed! Project structure creation would proceed here."
+            ),
+            mocker.call("📁 Creating project structure..."),
+            mocker.call("📄 Generating configuration files..."),
+            mocker.call("✅ Project setup complete!"),
+        ]
+        mock_logging.info.assert_has_calls(expected_calls)
+
+    def test_show_incomplete_tasks_dialog(
+        self, qtbot: QtBot, mocker: MockerFixture
+    ) -> None:
+        """Test show_incomplete_tasks_dialog displays error dialog correctly.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Create ActionButtonsFrame instance
+        action_frame = ActionButtonsFrame()
+        qtbot.addWidget(action_frame)
+
+        # Mock QMessageBox.critical
+        mock_critical = mocker.patch(
+            "new_python_github_project.main_window.QMessageBox.critical"
+        )
+
+        # Create mock incomplete tasks
+        mock_task1 = mocker.MagicMock()
+        mock_task1.description = "Set project name"
+        mock_task2 = mocker.MagicMock()
+        mock_task2.description = "Set project description"
+        incomplete_tasks = [mock_task1, mock_task2]
+
+        # Call show_incomplete_tasks_dialog
+        action_frame.show_incomplete_tasks_dialog(incomplete_tasks)
+
+        # Verify QMessageBox.critical was called with correct arguments
+        mock_critical.assert_called_once()
+        args = mock_critical.call_args[0]
+
+        # Check the arguments passed to QMessageBox.critical
+        assert args[0] is action_frame  # parent
+        assert args[1] == "Incomplete Tasks"  # title
+
+        # Check the message content
+        message = args[2]
+        assert (
+            "The following tasks require your input before creating the project:"
+            in message
+        )
+        assert "• Set project name" in message
+        assert "• Set project description" in message
+        assert "Please complete these tasks and try again." in message
+
+        # Check the button type
+        from PyQt6.QtWidgets import QMessageBox
+
+        assert args[3] == QMessageBox.StandardButton.Ok
+
+
+class TestTaskListFrame:
+    """Test cases for TaskListFrame class."""
+
+    def test_constructor(self, qtbot: QtBot, mocker: MockerFixture) -> None:
+        """Test TaskListFrame constructor initializes correctly.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock the setup_ui and load_sample_tasks methods to isolate constructor
+        mock_setup_ui = mocker.patch.object(TaskListFrame, "setup_ui")
+        mock_load_sample = mocker.patch.object(TaskListFrame, "load_sample_tasks")
+
+        # Create TaskListFrame instance
+        task_frame = TaskListFrame()
+        qtbot.addWidget(task_frame)
+
+        # Verify setup methods were called
+        mock_setup_ui.assert_called_once()
+        mock_load_sample.assert_called_once()
+
+    def test_get_incomplete_required_tasks_with_incomplete_tasks(
+        self, qtbot: QtBot, mocker: MockerFixture
+    ) -> None:
+        """Test get_incomplete_required_tasks returns tasks that need user input.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock setup methods to isolate testing
+        mocker.patch.object(TaskListFrame, "setup_ui")
+        mocker.patch.object(TaskListFrame, "load_sample_tasks")
+
+        # Create TaskListFrame instance
+        task_frame = TaskListFrame()
+        qtbot.addWidget(task_frame)
+
+        # Create mock tasks with different states
+        mock_task1 = mocker.MagicMock()
+        mock_task1.has_default = False  # Requires user input
+        mock_task1.is_completed = False  # Not completed
+
+        mock_task2 = mocker.MagicMock()
+        mock_task2.has_default = True  # Has default, doesn't require input
+        mock_task2.is_completed = False  # Not completed
+
+        mock_task3 = mocker.MagicMock()
+        mock_task3.has_default = False  # Requires user input
+        mock_task3.is_completed = True  # Already completed
+
+        mock_task4 = mocker.MagicMock()
+        mock_task4.has_default = False  # Requires user input
+        mock_task4.is_completed = False  # Not completed
+
+        # Set up the all_tasks list
+        task_frame.all_tasks = [mock_task1, mock_task2, mock_task3, mock_task4]
+
+        # Call get_incomplete_required_tasks
+        incomplete_tasks = task_frame.get_incomplete_required_tasks()
+
+        # Should return only task1 and task4 (no default and not completed)
+        assert len(incomplete_tasks) == 2
+        assert mock_task1 in incomplete_tasks
+        assert mock_task4 in incomplete_tasks
+        assert mock_task2 not in incomplete_tasks  # Has default
+        assert mock_task3 not in incomplete_tasks  # Already completed
+
+    def test_get_incomplete_required_tasks_with_all_tasks_complete(
+        self, qtbot: QtBot, mocker: MockerFixture
+    ) -> None:
+        """Test get_incomplete_required_tasks returns empty list when all tasks complete.
+
+        :param qtbot: pytest-qt fixture for testing Qt applications
+        :param mocker: pytest-mock fixture for mocking dependencies
+        """
+        # Mock setup methods to isolate testing
+        mocker.patch.object(TaskListFrame, "setup_ui")
+        mocker.patch.object(TaskListFrame, "load_sample_tasks")
+
+        # Create TaskListFrame instance
+        task_frame = TaskListFrame()
+        qtbot.addWidget(task_frame)
+
+        # Create mock tasks where all are either completed or have defaults
+        mock_task1 = mocker.MagicMock()
+        mock_task1.has_default = False  # Requires user input
+        mock_task1.is_completed = True  # But completed
+
+        mock_task2 = mocker.MagicMock()
+        mock_task2.has_default = True  # Has default
+        mock_task2.is_completed = False  # Not completed (but doesn't matter)
+
+        mock_task3 = mocker.MagicMock()
+        mock_task3.has_default = True  # Has default
+        mock_task3.is_completed = True  # Completed
+
+        # Set up the all_tasks list
+        task_frame.all_tasks = [mock_task1, mock_task2, mock_task3]
+
+        # Call get_incomplete_required_tasks
+        incomplete_tasks = task_frame.get_incomplete_required_tasks()
+
+        # Should return empty list since no tasks require user input and are incomplete
+        assert len(incomplete_tasks) == 0
+        assert incomplete_tasks == []
