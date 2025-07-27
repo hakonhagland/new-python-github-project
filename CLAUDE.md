@@ -221,10 +221,54 @@ Follow the Python style guide in `.cursor/rules/python.mdc`:
 - Type hints for all function parameters and return types
 - Use `ruff` for formatting/linting and `mypy` for type checking
 - Import order: standard library → third-party → local (alphabetically sorted)
+- **Avoid inline imports**: Move all imports to the top of the file for better readability and maintainability
 - Functions/methods organized alphabetically within their scope
 - **Module imports**: Prefer `from package import module` over `from package.module import function` for better readability and explicit provenance (e.g., `from new_python_github_project import helpers` then use `helpers.function()` instead of importing `function` directly)
 - **Function organization**: Organize functions with public functions first (no underscore prefix), followed by private functions (underscore prefix), each section alphabetically sorted and clearly separated with comment blocks (e.g., `# Public functions` and `# Private functions`)
 - **Class method organization**: Apply the same organization principle to class methods - organize with public methods first, followed by private methods (underscore prefix), each section alphabetically sorted and clearly separated with comment blocks (e.g., `# Public methods` and `# Private methods`). This provides predictable structure regardless of class size and makes method lookup efficient.
+
+### Import Guidelines
+
+**Avoid inline imports** - Place all imports at the top of the file for better readability and maintainability:
+
+```python
+# ❌ Bad: Inline imports scattered throughout functions
+def test_something():
+    from unittest.mock import patch
+    with patch('module.function'):
+        # test code
+
+def another_test():
+    from PyQt6.QtWidgets import QDialogButtonBox
+    # more test code
+
+# ✅ Good: All imports at the top
+from unittest.mock import patch
+from PyQt6.QtWidgets import QDialogButtonBox
+
+def test_something():
+    with patch('module.function'):
+        # test code
+
+def another_test():
+    # test code using QDialogButtonBox
+```
+
+**Exception**: Inline imports are acceptable only when:
+- Import is conditional and may not always be needed
+- Import is expensive and only used in specific code paths
+- Working around circular import issues
+
+```python
+# ✅ Acceptable: Conditional import
+def get_platform_specific_tool():
+    if sys.platform == "win32":
+        from windows_specific import Tool
+        return Tool()
+    else:
+        from unix_specific import Tool
+        return Tool()
+```
 
 ## Mypy
 
