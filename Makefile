@@ -43,7 +43,11 @@ ruff-format:
 	ruff format src tests
 
 test:
-	pytest tests/
+	@if [ "$(shell uname -s)" = "Darwin" ]; then \
+		pytest tests/ --no-xvfb; \
+	else \
+		pytest tests/; \
+	fi
 
 tox:
 	tox
