@@ -69,7 +69,7 @@ known-first-party = ["new_python_github_project"]
 split-on-trailing-comma = true
 
 [tool.coverage.report]
-fail_under = 20
+fail_under = 100
 
 # Configure pytest to run Qt applications in headless mode for local development
 # pytest-xvfb automatically handles platform compatibility:
