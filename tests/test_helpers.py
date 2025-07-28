@@ -189,7 +189,7 @@ class TestDaemonize:
         helpers.daemonize(config, verbose=True)
 
         mock_get_logfile.assert_called_once()
-        mock_setup_logging.assert_called_once_with("/fake/log.txt", True)
+        mock_setup_logging.assert_called_once_with(str(Path("/fake/log.txt")), True)
 
 
 class TestDebugToFile:
@@ -347,9 +347,10 @@ class TestDetachFromTerminal:
         ctx.obj = {"VERBOSE": True}
 
         mocker.patch("platform.system", return_value="Linux")
-        mock_getpgrp = mocker.patch("os.getpgrp", return_value=12345)
+        # Mock Unix-specific functions that may not exist on Windows
+        mock_getpgrp = mocker.patch("os.getpgrp", return_value=12345, create=True)
         mock_tcgetpgrp = mocker.patch(
-            "os.tcgetpgrp", return_value=12345
+            "os.tcgetpgrp", return_value=12345, create=True
         )  # Same = attached
         mock_daemonize = mocker.patch("new_python_github_project.helpers.daemonize")
         mock_write_lockfile = mocker.patch.object(config, "write_lockfile")
@@ -367,9 +368,10 @@ class TestDetachFromTerminal:
         ctx = MagicMock(spec=click.Context)
 
         mocker.patch("platform.system", return_value="Linux")
-        mock_getpgrp = mocker.patch("os.getpgrp", return_value=12345)
+        # Mock Unix-specific functions that may not exist on Windows
+        mock_getpgrp = mocker.patch("os.getpgrp", return_value=12345, create=True)
         mock_tcgetpgrp = mocker.patch(
-            "os.tcgetpgrp", return_value=54321
+            "os.tcgetpgrp", return_value=54321, create=True
         )  # Different = not attached
         mock_daemonize = mocker.patch("new_python_github_project.helpers.daemonize")
         mock_write_lockfile = mocker.patch.object(config, "write_lockfile")
@@ -402,7 +404,7 @@ class TestEditConfigFile:
 
         mock_popen.assert_called_once()
         args, kwargs = mock_popen.call_args
-        assert args[0] == ["gedit", "/fake/config.ini"]
+        assert args[0] == ["gedit", str(Path("/fake/config.ini"))]
 
     def test_macos_platform(self, get_config: GetConfig, mocker: MockerFixture) -> None:
         """Test edit_config_file on macOS platform."""
@@ -423,7 +425,7 @@ class TestEditConfigFile:
 
         mock_popen.assert_called_once()
         args, kwargs = mock_popen.call_args
-        assert args[0] == ["open", "-a", "TextEdit", "/fake/config.ini"]
+        assert args[0] == ["open", "-a", "TextEdit", str(Path("/fake/config.ini"))]
 
     def test_windows_platform(
         self, get_config: GetConfig, mocker: MockerFixture
@@ -446,7 +448,7 @@ class TestEditConfigFile:
 
         mock_popen.assert_called_once()
         args, kwargs = mock_popen.call_args
-        assert args[0] == ["notepad", "/fake/config.ini"]
+        assert args[0] == ["notepad", str(Path("/fake/config.ini"))]
 
     def test_unknown_platform(
         self, get_config: GetConfig, mocker: MockerFixture
