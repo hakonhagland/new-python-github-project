@@ -857,10 +857,13 @@ class TestActionButtonsFrame:
 class TestTaskListFrame:
     """Test cases for TaskListFrame class."""
 
-    def test_constructor(self, qtbot: QtBot, mocker: MockerFixture) -> None:
+    def test_constructor(
+        self, qtbot: QtBot, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
         """Test TaskListFrame constructor initializes correctly.
 
         :param qtbot: pytest-qt fixture for testing Qt applications
+        :param get_config: Fixture to get a test Config instance
         :param mocker: pytest-mock fixture for mocking dependencies
         """
         # Mock the setup_ui and load_sample_tasks methods to isolate constructor
@@ -868,7 +871,7 @@ class TestTaskListFrame:
         mock_load_sample = mocker.patch.object(TaskListFrame, "load_sample_tasks")
 
         # Create TaskListFrame instance
-        task_frame = TaskListFrame()
+        task_frame = TaskListFrame(get_config())
         qtbot.addWidget(task_frame)
 
         # Verify setup methods were called
@@ -876,11 +879,12 @@ class TestTaskListFrame:
         mock_load_sample.assert_called_once()
 
     def test_get_incomplete_required_tasks_with_incomplete_tasks(
-        self, qtbot: QtBot, mocker: MockerFixture
+        self, qtbot: QtBot, get_config: GetConfig, mocker: MockerFixture
     ) -> None:
         """Test get_incomplete_required_tasks returns tasks that need user input.
 
         :param qtbot: pytest-qt fixture for testing Qt applications
+        :param get_config: Fixture to get a test Config instance
         :param mocker: pytest-mock fixture for mocking dependencies
         """
         # Mock setup methods to isolate testing
@@ -888,7 +892,7 @@ class TestTaskListFrame:
         mocker.patch.object(TaskListFrame, "load_sample_tasks")
 
         # Create TaskListFrame instance
-        task_frame = TaskListFrame()
+        task_frame = TaskListFrame(get_config())
         qtbot.addWidget(task_frame)
 
         # Create mock tasks with different states
@@ -922,11 +926,12 @@ class TestTaskListFrame:
         assert mock_task3 not in incomplete_tasks  # Already completed
 
     def test_get_incomplete_required_tasks_with_all_tasks_complete(
-        self, qtbot: QtBot, mocker: MockerFixture
+        self, qtbot: QtBot, get_config: GetConfig, mocker: MockerFixture
     ) -> None:
         """Test get_incomplete_required_tasks returns empty list when all tasks complete.
 
         :param qtbot: pytest-qt fixture for testing Qt applications
+        :param get_config: Fixture to get a test Config instance
         :param mocker: pytest-mock fixture for mocking dependencies
         """
         # Mock setup methods to isolate testing
@@ -934,7 +939,7 @@ class TestTaskListFrame:
         mocker.patch.object(TaskListFrame, "load_sample_tasks")
 
         # Create TaskListFrame instance
-        task_frame = TaskListFrame()
+        task_frame = TaskListFrame(get_config())
         qtbot.addWidget(task_frame)
 
         # Create mock tasks where all are either completed or have defaults

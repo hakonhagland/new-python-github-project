@@ -191,6 +191,28 @@ class TestDaemonize:
         mock_get_logfile.assert_called_once()
         mock_setup_logging.assert_called_once_with(str(Path("/fake/log.txt")), True)
 
+    def test_windows_platform_with_original_cwd(
+        self, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test daemonize on Windows platform with original_cwd parameter."""
+        config = get_config()
+
+        mocker.patch("platform.system", return_value="Windows")
+        mock_get_logfile = mocker.patch.object(
+            config, "get_logfile_path", return_value=Path("/fake/log.txt")
+        )
+        mock_setup_logging = mocker.patch(
+            "new_python_github_project.helpers._setup_daemon_logging"
+        )
+
+        original_cwd = "/original/working/directory"
+        helpers.daemonize(config, verbose=True, original_cwd=original_cwd)
+
+        # Verify original_cwd was stored in config
+        assert config.original_cwd == original_cwd
+        mock_get_logfile.assert_called_once()
+        mock_setup_logging.assert_called_once_with(str(Path("/fake/log.txt")), True)
+
 
 class TestDebugToFile:
     """Test debug_to_file function."""
@@ -357,7 +379,7 @@ class TestDetachFromTerminal:
 
         helpers.detach_from_terminal(config, ctx)
 
-        mock_daemonize.assert_called_once_with(config, True)
+        mock_daemonize.assert_called_once_with(config, True, mocker.ANY)
         mock_write_lockfile.assert_called_once()
 
     def test_linux_not_attached_to_terminal(

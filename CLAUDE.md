@@ -93,6 +93,10 @@ coverage run -m pytest tests
 coverage report -m
 make coverage
 
+# Verify 100% coverage before commits
+# This project enforces 100% test coverage - always run before committing:
+make coverage
+
 # Build documentation
 cd docs && make clean && make html
 make docs
@@ -197,7 +201,7 @@ The project includes these pre-commit hooks:
 - `ruff-format`: Python code formatting
 - `mypy`: Type checking
 - `rstcheck`: reStructuredText validation
-- `coverage`: Test coverage verification
+- `coverage`: Test coverage verification (enforces 100% coverage)
 
 ## Configuration
 

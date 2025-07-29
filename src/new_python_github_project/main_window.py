@@ -43,15 +43,18 @@ class TaskListFrame(QFrame):
     .. versionadded:: 1.0.0
     """
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, config: Config, parent: Optional[QWidget] = None) -> None:
         """Initialize the TaskListFrame.
 
         Sets up the UI and loads sample tasks for the project creation workflow.
 
+        :param config: Configuration object
+        :type config: Config
         :param parent: Parent widget
         :type parent: QWidget, optional
         """
         super().__init__(parent)
+        self.config = config
         self.setup_ui()
         self.load_sample_tasks()
 
@@ -122,7 +125,8 @@ class TaskListFrame(QFrame):
         import os
 
         # Get current directory as default for project directory
-        current_dir = os.getcwd()
+        # Use original directory from before daemonization, fallback to current dir
+        current_dir = getattr(self.config, "original_cwd", None) or os.getcwd()
 
         # ============================================================================
         # SECTION 1: PROJECT FUNDAMENTALS (Name, Location)
@@ -614,7 +618,7 @@ class MainWindow(QMainWindow):
         :type layout: QVBoxLayout
         """
         # Area A1: Task List (42.5% of height)
-        self.task_list = TaskListFrame()
+        self.task_list = TaskListFrame(self.config)
         layout.addWidget(self.task_list, 42)
 
         # Area A2: Action Buttons (10% of height)

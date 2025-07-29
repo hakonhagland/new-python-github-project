@@ -26,6 +26,9 @@ class Config:
     def __init__(self) -> None:
         self.config_dir = self.get_config_dir()
         self.config_path = Path(self.config_dir) / self.config_fn
+        self.original_cwd: str | None = (
+            None  # Store original working directory before daemonization
+        )
         logging.info(f"Config directory: {str(self.config_dir)}")
         logging.info(f"Config file: {str(self.config_path)}")
         logging.info("Reading config file...")

@@ -80,7 +80,9 @@ def create_qapplication(config: Config) -> QApplication:
     return app
 
 
-def daemonize(config: Config, verbose: bool = False) -> None:
+def daemonize(
+    config: Config, verbose: bool = False, original_cwd: str | None = None
+) -> None:
     """Detach the process from the terminal and run in the background.
 
     **IMPORTANT**: This function should only be used on Linux/Unix systems where
@@ -102,7 +104,13 @@ def daemonize(config: Config, verbose: bool = False) -> None:
     :type config: Config
     :param verbose: Whether to use verbose logging in daemon
     :type verbose: bool
+    :param original_cwd: Original working directory to store for later use
+    :type original_cwd: str | None
     """
+    # Store original working directory if provided
+    if original_cwd:
+        config.original_cwd = original_cwd
+
     if platform.system() == "Windows":
         # Windows doesn't support forking, so just set up logging
         log_path = config.get_logfile_path()
@@ -247,7 +255,8 @@ def detach_from_terminal(config: Config, ctx: click.Context) -> None:
     # Note: type: ignore needed for Windows CI, will be "unused" on Unix systems
     if os.getpgrp() == os.tcgetpgrp(sys.stdout.fileno()):  # type: ignore[attr-defined]
         verbose = ctx.obj.get("VERBOSE", False)
-        daemonize(config, verbose)
+        original_cwd = os.getcwd()  # Capture before daemonization
+        daemonize(config, verbose, original_cwd)
     config.write_lockfile()
 
 
