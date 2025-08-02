@@ -134,6 +134,49 @@ make docker-container
 - **Always activate virtual environment before running git commands**
 - **NEVER use `git commit --amend` without asking user first**: Creates duplicate commit messages, overwrites history, and can cause push conflicts that require complex merge resolution
 
+### Pre-commit Best Practices
+
+**CRITICAL**: Always run formatting and quality checks BEFORE committing to avoid post-commit formatting changes that tempt the use of `git commit --amend`:
+
+```bash
+# Required workflow for all commits
+source .venv/bin/activate
+
+# 1. Run all checks and formatters FIRST
+make pre-commit  # Runs ruff format, mypy, coverage, etc.
+
+# 2. THEN stage and commit (hooks will pass cleanly)
+git add .
+git commit -m "your message"
+```
+
+**Why this prevents problems**:
+- Pre-commit hooks run formatters (like `ruff format`) that modify files
+- If you commit first, these modifications happen AFTER the commit
+- This creates unstaged changes that tempt using `git commit --amend`
+- Running checks first ensures everything is formatted before the commit
+
+**If pre-commit hooks modify files anyway**:
+```bash
+# If hooks still make changes, create a separate style commit
+git add .
+git commit -m "style: format code with pre-commit hooks"
+```
+
+**Never use these anti-patterns**:
+```bash
+# ❌ DON'T: Commit then amend with formatting changes
+git commit -m "fix: something"
+# (pre-commit hooks modify files)
+git add .
+git commit --amend --no-edit  # NEVER DO THIS
+
+# ✅ DO: Run checks first, then commit clean
+make pre-commit
+git add .
+git commit -m "fix: something"
+```
+
 ### Commit Message Format
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. All commit messages must follow this format:
@@ -169,14 +212,7 @@ The conventional commits format is enforced by a pre-commit hook.
 
 ### Pre-commit Hooks
 
-This project uses pre-commit hooks for code quality checks. **Critical**: You must activate the virtual environment before committing:
-
-```bash
-# Required workflow for commits
-source .venv/bin/activate
-git add .
-git commit -m "your message"  # Hooks will now work properly
-```
+This project uses pre-commit hooks for code quality checks. **See "Pre-commit Best Practices" section above for the recommended workflow.**
 
 **Why virtual environment is required**: Pre-commit hooks inherit the shell environment. If the virtual environment isn't activated, hooks that depend on tools like `coverage` (installed in `.venv`) will fail with "command not found" errors.
 
@@ -188,9 +224,15 @@ The project supports both Windows (.venv) and Linux (.venv-linux) environments. 
 - **After Claude sessions that involve commits**: User should run `pre-commit install` in Windows to restore Windows compatibility
 - Claude will explicitly notify when this is needed
 
-**Alternative approaches**:
-- Run hooks manually first: `make pre-commit` (after activating venv)
-- Bypass failing hooks if needed: `git commit --no-verify -m "message"`
+**Manual hook execution**:
+```bash
+# Run all hooks manually (recommended before committing)
+source .venv/bin/activate
+make pre-commit
+
+# Bypass hooks only if absolutely necessary
+git commit --no-verify -m "message"
+```
 
 The project includes these pre-commit hooks:
 - `trim-trailing-whitespace`: Remove trailing whitespace
