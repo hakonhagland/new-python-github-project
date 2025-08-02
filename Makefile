@@ -1,12 +1,19 @@
+ifeq ($(OS),Windows_NT)
+ROOT := $(shell cd)
+DOCKERDIR := $(ROOT)\docker
+else
 ROOT := $(shell pwd)
 DOCKERDIR := $(ROOT)/docker
+endif
 
 .PHONY: coverage docs mypy ruff-check ruff-fix ruff-format test tox
 .PHONY: docker-image docker-container publish-to-pypi rstcheck
 
+# Windows: GUI windows shown during tests (QT_QPA_PLATFORM=offscreen causes crashes)
+# Unix/Linux/macOS: Headless testing with offscreen platform
 coverage:
 ifeq ($(OS),Windows_NT)
-	coverage run -m pytest tests  # Windows: GUI windows shown (QT_QPA_PLATFORM=offscreen causes crashes)
+	coverage run -m pytest tests
 else
 	QT_QPA_PLATFORM=offscreen coverage run -m pytest tests
 endif
@@ -46,9 +53,11 @@ ruff-fix:
 ruff-format:
 	ruff format src tests
 
+# Windows: GUI windows shown during tests (QT_QPA_PLATFORM=offscreen causes crashes)
+# Unix/Linux/macOS: Headless testing with offscreen platform
 test:
 ifeq ($(OS),Windows_NT)
-	pytest tests/  # Windows: GUI windows shown (QT_QPA_PLATFORM=offscreen causes crashes)
+	pytest tests/
 else
 	QT_QPA_PLATFORM=offscreen pytest tests/
 endif
