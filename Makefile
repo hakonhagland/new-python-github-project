@@ -45,6 +45,8 @@ ruff-format:
 test:
 	@if [ "$(shell uname -s)" = "Darwin" ]; then \
 		QT_QPA_PLATFORM=offscreen pytest tests/; \
+	elif [ "$(shell uname -s)" = "Linux" ] && echo "$(shell uname -r)" | grep -q microsoft; then \
+		QT_QPA_PLATFORM=offscreen pytest tests/; \
 	elif [ "$(shell uname -s)" = "Linux" ]; then \
 		xvfb-run -a pytest tests/; \
 	else \
