@@ -132,7 +132,7 @@ make docker-container
 - If uncommitted files exist: run `git add .` and create a commit
 - Exception: When fixing errors from previous response, ask user about committing
 - **Always activate virtual environment before running git commands**
-- **Avoid `git commit --amend`**: Creates duplicate commit messages and overwrites history
+- **NEVER use `git commit --amend` without asking user first**: Creates duplicate commit messages, overwrites history, and can cause push conflicts that require complex merge resolution
 
 ### Commit Message Format
 
