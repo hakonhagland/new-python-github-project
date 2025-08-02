@@ -33,7 +33,6 @@ dev-dependencies = [
     "rstcheck>=6.2.4",
     "tox>=4.20.0",
     "pytest-qt>=4.5.0",
-    "pytest-xvfb>=3.1.1",
     "sphinx-autodoc-typehints>=2.3.0",
     "sphinx-click-rst-to-ansi-formatter>=0.1.1",
     "types-requests>=2.32.0.20240914",
@@ -71,12 +70,12 @@ split-on-trailing-comma = true
 [tool.coverage.report]
 fail_under = 100
 
-# Configure pytest with --no-xvfb for Windows and WSL environments
-# This prevents tests from hanging in WSL where Xvfb handling is problematic
-# Platform behavior with --no-xvfb:
-# - Windows: Uses native Windows GUI handling (no Xvfb available)
-# - WSL: Prevents hanging by skipping Xvfb setup, uses Windows display
-# - Native Linux: GUI windows will appear (use 'make tests-xvfb' for headless)
-# - macOS: GUI windows will appear (Makefile sets QT_QPA_PLATFORM=offscreen for headless)
+# Configure pytest with --no-xvfb for compatibility with cross-platform testing
+# Modern PyQt6 (>=6.9.0) supports reliable offscreen rendering via QT_QPA_PLATFORM=offscreen
+# Platform behavior with --no-xvfb + Makefile's QT_QPA_PLATFORM=offscreen:
+# - Windows: Uses --no-xvfb (no offscreen platform needed)
+# - WSL: Uses QT_QPA_PLATFORM=offscreen (prevents display protocol errors)
+# - Native Linux: Uses QT_QPA_PLATFORM=offscreen (no xvfb required)
+# - macOS: Uses QT_QPA_PLATFORM=offscreen (native headless rendering)
 [tool.pytest.ini_options]
 addopts = "--no-xvfb"

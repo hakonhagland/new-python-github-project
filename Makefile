@@ -1,11 +1,15 @@
 ROOT := $(shell pwd)
 DOCKERDIR := $(ROOT)/docker
 
-.PHONY: coverage docs mypy ruff-check ruff-fix ruff-format test tests-xvfb tox
+.PHONY: coverage docs mypy ruff-check ruff-fix ruff-format test tox
 .PHONY: docker-image docker-container publish-to-pypi rstcheck
 
 coverage:
-	coverage run -m pytest tests
+	@if [ "$(shell uname -s)" = "Windows_NT" ]; then \
+		coverage run -m pytest tests; \
+	else \
+		QT_QPA_PLATFORM=offscreen coverage run -m pytest tests; \
+	fi
 	coverage report -m
 
 docker-image:
@@ -43,20 +47,11 @@ ruff-format:
 	ruff format src tests
 
 test:
-	@if [ "$(shell uname -s)" = "Darwin" ]; then \
-		QT_QPA_PLATFORM=offscreen pytest tests/; \
-	elif [ "$(shell uname -s)" = "Linux" ] && echo "$(shell uname -r)" | grep -q microsoft; then \
-		QT_QPA_PLATFORM=offscreen pytest tests/; \
-	elif [ "$(shell uname -s)" = "Linux" ]; then \
-		xvfb-run -a pytest tests/; \
-	else \
+	@if [ "$(shell uname -s)" = "Windows_NT" ]; then \
 		pytest tests/; \
+	else \
+		QT_QPA_PLATFORM=offscreen pytest tests/; \
 	fi
-
-# Run tests with xvfb for headless GUI testing on native Linux
-# Note: Requires 'sudo apt install xvfb' on Ubuntu/Debian systems
-tests-xvfb:
-	xvfb-run -a pytest tests/
 
 tox:
 	tox

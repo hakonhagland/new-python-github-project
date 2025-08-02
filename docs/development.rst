@@ -33,6 +33,5 @@ To set up an environment for developing and submitting a pull request, you could
    * run ``pre-commit install --hook-type pre-commit`` and ``pre-commit install --hook-type commit-msg`` to install
      the pre-commit hooks
    * run ``make pre-commit`` to run the pre-commit hooks on all files
-   * **On native Linux systems only**: run ``sudo apt install xvfb`` (Ubuntu/Debian) to enable headless GUI testing
    * run ``make test`` to run the test suite
    * run ``make coverage`` to run unit tests and generate coverage report
