@@ -12,11 +12,7 @@ endif
 # Windows: GUI windows shown during tests (QT_QPA_PLATFORM=offscreen causes crashes)
 # Unix/Linux/macOS: Headless testing with offscreen platform
 coverage:
-ifeq ($(OS),Windows_NT)
-	coverage run -m pytest tests
-else
-	QT_QPA_PLATFORM=offscreen coverage run -m pytest tests
-endif
+	./scripts/run-coverage.sh
 	coverage report -m
 
 docker-image:

@@ -43,7 +43,7 @@ repos:
       - id: coverage
         name: coverage
         language: system
-        entry: python -m coverage run -m pytest tests
+        entry: ./scripts/run-coverage.sh
         always_run: true
         pass_filenames: false
       - id: coverage-report
