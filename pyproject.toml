@@ -70,12 +70,11 @@ split-on-trailing-comma = true
 [tool.coverage.report]
 fail_under = 100
 
-# Configure pytest with --no-xvfb for compatibility with cross-platform testing
 # Modern PyQt6 (>=6.9.0) supports reliable offscreen rendering via QT_QPA_PLATFORM=offscreen
-# Platform behavior with --no-xvfb + Makefile's QT_QPA_PLATFORM=offscreen:
-# - Windows: Uses --no-xvfb (no offscreen platform needed)
-# - WSL: Uses QT_QPA_PLATFORM=offscreen (prevents display protocol errors)
-# - Native Linux: Uses QT_QPA_PLATFORM=offscreen (no xvfb required)
-# - macOS: Uses QT_QPA_PLATFORM=offscreen (native headless rendering)
+# Cross-platform headless testing approach:
+# - All platforms: Use QT_QPA_PLATFORM=offscreen environment variable
+# - Eliminates need for pytest-xvfb, xvfb-run, or platform-specific solutions
+# - Leverages PyQt6's native offscreen capabilities for consistent behavior
 [tool.pytest.ini_options]
-addopts = "--no-xvfb"
+# addopts = "--no-xvfb"  # Removed: --no-xvfb requires pytest-xvfb plugin which we no longer use
+testpaths = ["tests"]

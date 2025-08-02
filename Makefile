@@ -5,11 +5,7 @@ DOCKERDIR := $(ROOT)/docker
 .PHONY: docker-image docker-container publish-to-pypi rstcheck
 
 coverage:
-	@if [ "$(shell uname -s)" = "Windows_NT" ]; then \
-		coverage run -m pytest tests; \
-	else \
-		QT_QPA_PLATFORM=offscreen coverage run -m pytest tests; \
-	fi
+	QT_QPA_PLATFORM=offscreen coverage run -m pytest tests
 	coverage report -m
 
 docker-image:
@@ -47,11 +43,7 @@ ruff-format:
 	ruff format src tests
 
 test:
-	@if [ "$(shell uname -s)" = "Windows_NT" ]; then \
-		pytest tests/; \
-	else \
-		QT_QPA_PLATFORM=offscreen pytest tests/; \
-	fi
+	QT_QPA_PLATFORM=offscreen pytest tests/
 
 tox:
 	tox
