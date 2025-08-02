@@ -5,7 +5,11 @@ DOCKERDIR := $(ROOT)/docker
 .PHONY: docker-image docker-container publish-to-pypi rstcheck
 
 coverage:
+ifeq ($(OS),Windows_NT)
+	coverage run -m pytest tests
+else
 	QT_QPA_PLATFORM=offscreen coverage run -m pytest tests
+endif
 	coverage report -m
 
 docker-image:
@@ -43,7 +47,11 @@ ruff-format:
 	ruff format src tests
 
 test:
+ifeq ($(OS),Windows_NT)
+	pytest tests/
+else
 	QT_QPA_PLATFORM=offscreen pytest tests/
+endif
 
 tox:
 	tox
