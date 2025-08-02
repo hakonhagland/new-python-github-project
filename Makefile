@@ -6,7 +6,7 @@ DOCKERDIR := $(ROOT)/docker
 
 coverage:
 ifeq ($(OS),Windows_NT)
-	coverage run -m pytest tests
+	coverage run -m pytest tests  # Windows: GUI windows shown (QT_QPA_PLATFORM=offscreen causes crashes)
 else
 	QT_QPA_PLATFORM=offscreen coverage run -m pytest tests
 endif
@@ -48,7 +48,7 @@ ruff-format:
 
 test:
 ifeq ($(OS),Windows_NT)
-	pytest tests/
+	pytest tests/  # Windows: GUI windows shown (QT_QPA_PLATFORM=offscreen causes crashes)
 else
 	QT_QPA_PLATFORM=offscreen pytest tests/
 endif
