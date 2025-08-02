@@ -40,16 +40,18 @@ In this specific WSL scenario, create a separate Linux virtual environment:
 
 ```bash
 # First-time WSL setup (install required system packages - run manually)
-# sudo apt update
-# sudo apt install python3.12-venv
+sudo apt update
+sudo apt install python3-pip python3-dev python3-venv
 
 # Create Linux-specific virtual environment (one-time setup)
 python3 -m venv .venv-linux
 source .venv-linux/bin/activate
 pip install -e .  # Install main dependencies
-pip install coverage mypy pytest-mock pytest ruff sphinx-rtd-theme pre-commit rstcheck tox pytest-qt pytest-xvfb sphinx-autodoc-typehints types-click types-colorama
+pip install coverage mypy pytest-mock pytest ruff sphinx-rtd-theme pre-commit rstcheck tox pytest-qt sphinx-autodoc-typehints types-click types-colorama
 # Note: Manual installation needed because dev dependencies are in uv-specific [tool.uv] section
-pre-commit install
+# Note: pytest-xvfb no longer needed - modern PyQt6 uses QT_QPA_PLATFORM=offscreen
+pre-commit install --hook-type pre-commit
+pre-commit install --hook-type commit-msg
 
 # For subsequent commands, always use .venv-linux
 source .venv-linux/bin/activate
@@ -60,9 +62,6 @@ source .venv-linux/bin/activate
 # For Docker commands (make docker-container)
 sudo apt install docker.io
 sudo usermod -aG docker $USER  # Logout/login required
-
-# For GUI testing (pytest-xvfb already handles headless testing)
-sudo apt install xvfb
 ```
 
 **Claude Code Instruction**:
