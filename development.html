@@ -119,7 +119,8 @@ interpreter.</p></li>
 the virtual environment. Note that by installing into a virtual environment the icons will not be installed
 correctly on Linux, but this might not be a problem if you are developing the application.</p></li>
 <li><p>run <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span></code> or <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span> <span class="pre">--python=&lt;python-version&gt;</span></code> to install the dependencies</p></li>
-<li><p>run <code class="docutils literal notranslate"><span class="pre">pre-commit</span> <span class="pre">install</span></code> to install the pre-commit hooks</p></li>
+<li><p>run <code class="docutils literal notranslate"><span class="pre">pre-commit</span> <span class="pre">install</span> <span class="pre">--hook-type</span> <span class="pre">pre-commit</span></code> and <code class="docutils literal notranslate"><span class="pre">pre-commit</span> <span class="pre">install</span> <span class="pre">--hook-type</span> <span class="pre">commit-msg</span></code> to install
+the pre-commit hooks</p></li>
 <li><p>run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">pre-commit</span></code> to run the pre-commit hooks on all files</p></li>
 <li><p>run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test</span></code> to run the test suite</p></li>
 <li><p>run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">coverage</span></code> to run unit tests and generate coverage report</p></li>

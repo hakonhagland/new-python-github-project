@@ -30,7 +30,8 @@ To set up an environment for developing and submitting a pull request, you could
      the virtual environment. Note that by installing into a virtual environment the icons will not be installed
      correctly on Linux, but this might not be a problem if you are developing the application.
    * run ``uv sync`` or ``uv sync --python=<python-version>`` to install the dependencies
-   * run ``pre-commit install`` to install the pre-commit hooks
+   * run ``pre-commit install --hook-type pre-commit`` and ``pre-commit install --hook-type commit-msg`` to install
+     the pre-commit hooks
    * run ``make pre-commit`` to run the pre-commit hooks on all files
    * run ``make test`` to run the test suite
    * run ``make coverage`` to run unit tests and generate coverage report
