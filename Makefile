@@ -54,6 +54,7 @@ test:
 	fi
 
 # Run tests with xvfb for headless GUI testing on native Linux
+# Note: Requires 'sudo apt install xvfb' on Ubuntu/Debian systems
 tests-xvfb:
 	xvfb-run -a pytest tests/
 
