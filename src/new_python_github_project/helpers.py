@@ -6,12 +6,17 @@ import subprocess
 import sys
 import sysconfig
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 import click
 from PyQt6.QtGui import QGuiApplication, QIcon
+from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 from PyQt6.QtWidgets import QApplication
 
 from new_python_github_project.config import Config
+
+if TYPE_CHECKING:  # pragma: no cover
+    from new_python_github_project.main_window import MainWindow
 from new_python_github_project.constants import Directories, FileNames
 from new_python_github_project.exceptions import ConfigException
 
@@ -31,7 +36,7 @@ def check_another_instance_running(config: Config) -> None:
     this could mess up log files and other files.
     This function checks if another instance is running by checking the lockfile.
     If the lockfile exists, it checks if the process is running by trying to send a signal to the process.
-    If the process is running, it exits the application.
+    If the process is running, it attempts to bring the existing window to the foreground and exits.
     """
     lockfile = config.get_lockfile_path()
     if lockfile.exists():
@@ -42,10 +47,18 @@ def check_another_instance_running(config: Config) -> None:
             if pid > 0:
                 try:
                     os.kill(pid, 0)
-                    logging.error(
-                        "Another instance of the application is already running. Exiting."
+                    logging.info(
+                        "Another instance of the application is already running. "
+                        "Attempting to bring existing window to foreground."
                     )
-                    sys.exit(1)
+                    # Try to bring existing window to foreground
+                    if _send_activation_signal(config):
+                        logging.info("Successfully activated existing window.")
+                    else:
+                        logging.warning(
+                            "Could not activate existing window. It may be unresponsive."
+                        )
+                    sys.exit(0)
                 except OSError:
                     logging.error(f"Process {pid} is not running. Removing lockfile.")
                     config.remove_lockfile()
@@ -54,6 +67,46 @@ def check_another_instance_running(config: Config) -> None:
             logging.error(f"Error reading lockfile {lockfile}. Removing lockfile.")
             config.remove_lockfile()
             return
+
+
+def create_activation_server(config: Config, main_window: "MainWindow") -> QLocalServer:
+    """Create a local server to handle window activation requests.
+
+    :param config: Configuration object
+    :type config: Config
+    :param main_window: Main window instance to activate
+    :type main_window: MainWindow
+    :return: Local server instance
+    :rtype: QLocalServer
+    """
+    server = QLocalServer()
+    server_name = _get_activation_server_name(config)
+
+    def handle_new_connection() -> None:
+        """Handle incoming activation requests."""
+        client = server.nextPendingConnection()
+        if client:
+            client.waitForReadyRead(1000)
+            data = client.readAll().data()
+            if data == b"ACTIVATE":
+                # Bring window to foreground
+                main_window.raise_()
+                main_window.activateWindow()
+                main_window.show()
+                logging.info("Window brought to foreground by activation request")
+            client.disconnectFromServer()
+
+    server.newConnection.connect(handle_new_connection)
+
+    # Remove any existing server with the same name
+    QLocalServer.removeServer(server_name)
+
+    if not server.listen(server_name):
+        logging.warning(f"Could not start activation server: {server.errorString()}")
+    else:
+        logging.info(f"Activation server started: {server_name}")
+
+    return server
 
 
 def create_qapplication(config: Config) -> QApplication:
@@ -326,6 +379,38 @@ def setup_remote_debugging(host: str = "localhost", port: int = 5678) -> None:
 
 
 # Private functions
+
+
+def _get_activation_server_name(config: Config) -> str:
+    """Get the local server name for window activation.
+
+    :param config: Configuration object
+    :type config: Config
+    :return: Server name for the local socket
+    :rtype: str
+    """
+    return f"new_python_github_project_{config.appname}_activation"
+
+
+def _send_activation_signal(config: Config) -> bool:
+    """Send activation signal to existing application instance.
+
+    :param config: Configuration object
+    :type config: Config
+    :return: True if signal was sent successfully, False otherwise
+    :rtype: bool
+    """
+    socket = QLocalSocket()
+    server_name = _get_activation_server_name(config)
+
+    socket.connectToServer(server_name)
+    if not socket.waitForConnected(1000):  # 1 second timeout
+        return False
+
+    socket.write(b"ACTIVATE")
+    socket.waitForBytesWritten(1000)
+    socket.disconnectFromServer()
+    return True
 
 
 def _detach_from_console_windows(

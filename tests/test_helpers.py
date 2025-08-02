@@ -11,6 +11,7 @@ import click
 import pytest
 from PyQt6.QtWidgets import QApplication
 from pytest_mock.plugin import MockerFixture
+from pytestqt.qtbot import QtBot
 
 from new_python_github_project import helpers
 from new_python_github_project.config import Config
@@ -69,11 +70,43 @@ class TestCheckAnotherInstanceRunning:
         mock_open = mocker.patch("builtins.open", mocker.mock_open(read_data="12345"))
         mock_kill = mocker.patch("os.kill", return_value=None)  # Process exists
         mock_exit = mocker.patch("sys.exit")
+        # Mock the activation signal sending
+        mock_send_activation = mocker.patch(
+            "new_python_github_project.helpers._send_activation_signal",
+            return_value=False,
+        )
 
         helpers.check_another_instance_running(config)
 
         mock_kill.assert_called_once_with(12345, 0)
-        mock_exit.assert_called_once_with(1)
+        mock_send_activation.assert_called_once_with(config)
+        mock_exit.assert_called_once_with(0)
+
+    def test_lockfile_exists_and_process_running_activation_success(
+        self, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test when lockfile exists, process is running, and activation succeeds."""
+        config = get_config()
+        mock_lockfile = mocker.patch.object(config, "get_lockfile_path")
+        mock_path = MagicMock()
+        mock_path.exists.return_value = True
+        mock_lockfile.return_value = mock_path
+
+        # Mock file operations
+        mock_open = mocker.patch("builtins.open", mocker.mock_open(read_data="12345"))
+        mock_kill = mocker.patch("os.kill", return_value=None)  # Process exists
+        mock_exit = mocker.patch("sys.exit")
+        # Mock the activation signal sending - success case
+        mock_send_activation = mocker.patch(
+            "new_python_github_project.helpers._send_activation_signal",
+            return_value=True,
+        )
+
+        helpers.check_another_instance_running(config)
+
+        mock_kill.assert_called_once_with(12345, 0)
+        mock_send_activation.assert_called_once_with(config)
+        mock_exit.assert_called_once_with(0)
 
     def test_lockfile_invalid_content(
         self, get_config: GetConfig, mocker: MockerFixture
@@ -767,3 +800,193 @@ class TestSetupDaemonLogging:
         assert mock_root_logger.removeHandler.call_count == 2
         mock_root_logger.removeHandler.assert_any_call(mock_handler1)
         mock_root_logger.removeHandler.assert_any_call(mock_handler2)
+
+
+class TestActivationServer:
+    """Test activation server functionality."""
+
+    def test_create_activation_server_success(
+        self, get_config: GetConfig, mocker: MockerFixture, qtbot: QtBot
+    ) -> None:
+        """Test successful creation of activation server."""
+        config = get_config()
+
+        # Mock the main window
+        mock_window = MagicMock()
+
+        # Mock PyQt6 networking components
+        mock_local_server_class = mocker.patch(
+            "new_python_github_project.helpers.QLocalServer"
+        )
+        mock_server = MagicMock()
+        mock_local_server_class.return_value = mock_server
+        mock_server.listen.return_value = True
+
+        # Mock server name generation
+        mock_get_server_name = mocker.patch(
+            "new_python_github_project.helpers._get_activation_server_name",
+            return_value="test_server_name",
+        )
+
+        # Mock QLocalServer.removeServer
+        mock_remove_server = mocker.patch(
+            "new_python_github_project.helpers.QLocalServer.removeServer"
+        )
+
+        server = helpers.create_activation_server(config, mock_window)
+
+        mock_get_server_name.assert_called_once_with(config)
+        mock_remove_server.assert_called_once_with("test_server_name")
+        mock_server.listen.assert_called_once_with("test_server_name")
+        assert server == mock_server
+
+    def test_create_activation_server_listen_fails(
+        self, get_config: GetConfig, mocker: MockerFixture, qtbot: QtBot
+    ) -> None:
+        """Test when server fails to listen."""
+        config = get_config()
+        mock_window = MagicMock()
+
+        # Mock PyQt6 networking components
+        mock_local_server_class = mocker.patch(
+            "new_python_github_project.helpers.QLocalServer"
+        )
+        mock_server = MagicMock()
+        mock_local_server_class.return_value = mock_server
+        mock_server.listen.return_value = False
+        mock_server.errorString.return_value = "Address already in use"
+
+        # Mock server name generation
+        mocker.patch(
+            "new_python_github_project.helpers._get_activation_server_name",
+            return_value="test_server_name",
+        )
+
+        # Mock QLocalServer.removeServer
+        mocker.patch("new_python_github_project.helpers.QLocalServer.removeServer")
+
+        server = helpers.create_activation_server(config, mock_window)
+
+        mock_server.listen.assert_called_once_with("test_server_name")
+        assert server == mock_server
+
+    def test_get_activation_server_name(self, get_config: GetConfig) -> None:
+        """Test activation server name generation."""
+        config = get_config()
+
+        server_name = helpers._get_activation_server_name(config)
+
+        expected = f"new_python_github_project_{config.appname}_activation"
+        assert server_name == expected
+
+    def test_send_activation_signal_success(
+        self, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test successful activation signal sending."""
+        config = get_config()
+
+        # Mock QLocalSocket
+        mock_local_socket_class = mocker.patch(
+            "new_python_github_project.helpers.QLocalSocket"
+        )
+        mock_socket = MagicMock()
+        mock_local_socket_class.return_value = mock_socket
+        mock_socket.waitForConnected.return_value = True
+        mock_socket.waitForBytesWritten.return_value = True
+
+        # Mock server name generation
+        mock_get_server_name = mocker.patch(
+            "new_python_github_project.helpers._get_activation_server_name",
+            return_value="test_server_name",
+        )
+
+        result = helpers._send_activation_signal(config)
+
+        mock_get_server_name.assert_called_once_with(config)
+        mock_socket.connectToServer.assert_called_once_with("test_server_name")
+        mock_socket.waitForConnected.assert_called_once_with(1000)
+        mock_socket.write.assert_called_once_with(b"ACTIVATE")
+        mock_socket.waitForBytesWritten.assert_called_once_with(1000)
+        mock_socket.disconnectFromServer.assert_called_once()
+        assert result is True
+
+    def test_send_activation_signal_connection_fails(
+        self, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test when activation signal connection fails."""
+        config = get_config()
+
+        # Mock QLocalSocket
+        mock_local_socket_class = mocker.patch(
+            "new_python_github_project.helpers.QLocalSocket"
+        )
+        mock_socket = MagicMock()
+        mock_local_socket_class.return_value = mock_socket
+        mock_socket.waitForConnected.return_value = False
+
+        # Mock server name generation
+        mocker.patch(
+            "new_python_github_project.helpers._get_activation_server_name",
+            return_value="test_server_name",
+        )
+
+        result = helpers._send_activation_signal(config)
+
+        mock_socket.connectToServer.assert_called_once_with("test_server_name")
+        mock_socket.waitForConnected.assert_called_once_with(1000)
+        # Should not call write methods if connection failed
+        mock_socket.write.assert_not_called()
+        mock_socket.waitForBytesWritten.assert_not_called()
+        mock_socket.disconnectFromServer.assert_not_called()
+        assert result is False
+
+    def test_activation_server_handle_connection(
+        self, get_config: GetConfig, mocker: MockerFixture
+    ) -> None:
+        """Test activation server handling incoming connections."""
+        config = get_config()
+
+        # Mock the main window
+        mock_window = MagicMock()
+
+        # Mock PyQt6 networking components
+        mock_local_server_class = mocker.patch(
+            "new_python_github_project.helpers.QLocalServer"
+        )
+        mock_server = MagicMock()
+        mock_local_server_class.return_value = mock_server
+        mock_server.listen.return_value = True
+
+        # Mock client connection
+        mock_client = MagicMock()
+        mock_client.waitForReadyRead.return_value = True
+        mock_read_all = MagicMock()
+        mock_read_all.data.return_value = b"ACTIVATE"
+        mock_client.readAll.return_value = mock_read_all
+        mock_server.nextPendingConnection.return_value = mock_client
+
+        # Mock server name generation
+        mocker.patch(
+            "new_python_github_project.helpers._get_activation_server_name",
+            return_value="test_server_name",
+        )
+
+        # Mock QLocalServer.removeServer
+        mocker.patch("new_python_github_project.helpers.QLocalServer.removeServer")
+
+        # Create the server
+        helpers.create_activation_server(config, mock_window)
+
+        # Get the connection handler that was connected to newConnection signal
+        call_args = mock_server.newConnection.connect.call_args
+        assert call_args is not None
+        connection_handler = call_args[0][0]
+
+        # Simulate a new connection
+        connection_handler()
+
+        # Verify window activation methods were called
+        mock_window.raise_.assert_called_once()
+        mock_window.activateWindow.assert_called_once()
+        mock_window.show.assert_called_once()
+        mock_client.disconnectFromServer.assert_called_once()

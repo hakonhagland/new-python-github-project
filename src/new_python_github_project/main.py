@@ -53,6 +53,8 @@ def create(ctx: click.Context, no_detach: bool) -> None:
     app = helpers.create_qapplication(config)
     # All the work is done by the MainWindow callbacks
     window = MainWindow(app, config)  # noqa: F841
+    # Create activation server to handle window bring-to-front requests
+    activation_server = helpers.create_activation_server(config, window)  # noqa: F841
     window.show()
     # Start the event loop
     sys.exit(app.exec())
