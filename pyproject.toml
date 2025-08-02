@@ -71,11 +71,12 @@ split-on-trailing-comma = true
 [tool.coverage.report]
 fail_under = 100
 
-# Configure pytest to run Qt applications in headless mode for local development
-# pytest-xvfb automatically handles platform compatibility:
-# - Linux: Uses Xvfb virtual display (prevents GUI flashing)
-# - macOS: Falls back to Qt's native headless rendering if X11 unavailable
-# - Windows: Uses appropriate headless method
-# This ensures consistent behavior across all platforms
+# Configure pytest with --no-xvfb for Windows and WSL environments
+# This prevents tests from hanging in WSL where Xvfb handling is problematic
+# Platform behavior with --no-xvfb:
+# - Windows: Uses native Windows GUI handling (no Xvfb available)
+# - WSL: Prevents hanging by skipping Xvfb setup, uses Windows display
+# - Native Linux: GUI windows will appear (use 'make tests-xvfb' for headless)
+# - macOS: GUI windows will appear (Makefile sets QT_QPA_PLATFORM=offscreen for headless)
 [tool.pytest.ini_options]
-# Removed --no-xvfb to enable automatic headless GUI testing
+addopts = "--no-xvfb"

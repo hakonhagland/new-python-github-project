@@ -1,7 +1,7 @@
 ROOT := $(shell pwd)
 DOCKERDIR := $(ROOT)/docker
 
-.PHONY: coverage docs mypy ruff-check ruff-fix ruff-format test tox
+.PHONY: coverage docs mypy ruff-check ruff-fix ruff-format test tests-xvfb tox
 .PHONY: docker-image docker-container publish-to-pypi rstcheck
 
 coverage:
@@ -44,10 +44,16 @@ ruff-format:
 
 test:
 	@if [ "$(shell uname -s)" = "Darwin" ]; then \
-		pytest tests/ --no-xvfb; \
+		QT_QPA_PLATFORM=offscreen pytest tests/; \
+	elif [ "$(shell uname -s)" = "Linux" ]; then \
+		xvfb-run -a pytest tests/; \
 	else \
 		pytest tests/; \
 	fi
+
+# Run tests with xvfb for headless GUI testing on native Linux
+tests-xvfb:
+	xvfb-run -a pytest tests/
 
 tox:
 	tox
