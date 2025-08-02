@@ -60,7 +60,7 @@ jobs:
 
       - name: Code coverage
         run: |
-          uv run coverage run -m pytest tests --no-xvfb
+          uv run coverage run -m pytest tests
           uv run coverage report -m
 
       - name: Upload coverage reports to Codecov
