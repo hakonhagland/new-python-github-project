@@ -169,6 +169,7 @@ class TestSetupPostForkLogging:
         """Test that setup_post_fork_logging configures GUI handler and replays messages."""
         # Mock handlers
         mock_gui_handler = MagicMock(spec=GuiLogHandler)
+        mock_gui_handler._main_window = MagicMock()  # Add the required attribute
         mock_buffer_handler = MagicMock(spec=BufferHandler)
         mock_buffer_handler.get_messages.return_value = [
             "INFO: test message 1",
@@ -208,7 +209,13 @@ class TestSetupPostForkLogging:
 
         # Verify message replay
         mock_buffer_handler.get_messages.assert_called_once()
-        assert mock_gui_handler.emit.call_count == 2  # Two messages replayed
+        assert (
+            mock_gui_handler.log_message_signal.emit.call_count == 2
+        )  # Two messages replayed
+        mock_gui_handler.log_message_signal.emit.assert_any_call("INFO: test message 1")
+        mock_gui_handler.log_message_signal.emit.assert_any_call(
+            "ERROR: test message 2"
+        )
 
         # Verify buffer cleanup
         mock_buffer_handler.clear.assert_called_once()
@@ -219,6 +226,7 @@ class TestSetupPostForkLogging:
         """Test that setup_post_fork_logging doesn't add GUI handler if already present."""
         # Mock handlers
         mock_gui_handler = MagicMock(spec=GuiLogHandler)
+        mock_gui_handler._main_window = MagicMock()  # Add the required attribute
         mock_buffer_handler = MagicMock(spec=BufferHandler)
         mock_buffer_handler.get_messages.return_value = []
 
@@ -245,10 +253,13 @@ class TestSetupPostForkLogging:
         # Verify handler is not added again
         mock_root_logger.addHandler.assert_not_called()
 
-    def test_creates_correct_log_record_for_replay(self, mocker: MockerFixture) -> None:
-        """Test that setup_post_fork_logging creates correct log records for replay."""
+    def test_emits_buffered_messages_directly_to_signal(
+        self, mocker: MockerFixture
+    ) -> None:
+        """Test that setup_post_fork_logging emits buffered messages directly to signal."""
         # Mock handlers
         mock_gui_handler = MagicMock(spec=GuiLogHandler)
+        mock_gui_handler._main_window = MagicMock()  # Add the required attribute
         mock_buffer_handler = MagicMock(spec=BufferHandler)
         mock_buffer_handler.get_messages.return_value = ["TEST: sample message"]
 
@@ -272,19 +283,10 @@ class TestSetupPostForkLogging:
 
         setup_post_fork_logging(mock_main_window)
 
-        # Verify emit was called with a LogRecord
-        mock_gui_handler.emit.assert_called_once()
-        call_args = mock_gui_handler.emit.call_args[0]
-        log_record = call_args[0]
-
-        assert isinstance(log_record, logging.LogRecord)
-        assert log_record.name == "buffered"
-        assert log_record.levelno == logging.INFO
-        assert log_record.msg == "TEST: sample message"
-        assert log_record.pathname == ""
-        assert log_record.lineno == 0
-        assert log_record.args == ()
-        assert log_record.exc_info is None
+        # Verify signal was emitted directly with the already-formatted message
+        mock_gui_handler.log_message_signal.emit.assert_called_once_with(
+            "TEST: sample message"
+        )
 
 
 class TestBufferHandler:

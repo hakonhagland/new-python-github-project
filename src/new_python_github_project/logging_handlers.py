@@ -214,20 +214,12 @@ def setup_post_fork_logging(main_window: "MainWindow") -> None:
     if gui_handler not in root_logger.handlers:
         root_logger.addHandler(gui_handler)
 
-    # Replay buffered pre-fork messages through the GUI handler
+    # Replay buffered pre-fork messages directly to GUI (already formatted)
     buffered_messages = buffer_handler.get_messages()
     for message in buffered_messages:
-        # Create a log record and emit it through the GUI handler
-        record = logging.LogRecord(
-            name="buffered",
-            level=logging.INFO,
-            pathname="",
-            lineno=0,
-            msg=message,
-            args=(),
-            exc_info=None,
-        )
-        gui_handler.emit(record)
+        # Emit already-formatted message directly to GUI without re-formatting
+        if gui_handler._main_window is not None:
+            gui_handler.log_message_signal.emit(message)
 
     # Clean up the buffer file after replaying messages
     buffer_handler.clear()
