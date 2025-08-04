@@ -40,6 +40,14 @@ repos:
           - toml==0.10.2
 -   repo: local
     hooks:
+      - id: pylint-sort
+        name: pylint sort check
+        language: system
+        entry: pylint --disable=all --enable=unsorted-functions,unsorted-methods
+        types: [python]
+        pass_filenames: true
+        # Don't fail on sorting issues for now, just warn
+        verbose: true
       - id: coverage
         name: coverage
         language: system

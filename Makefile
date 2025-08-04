@@ -8,6 +8,7 @@ endif
 
 .PHONY: coverage docs mypy ruff-check ruff-fix ruff-format test tox
 .PHONY: docker-image docker-container publish-to-pypi rstcheck
+.PHONY: pylint-sort-check pylint-sort-check-all
 
 # Windows: GUI windows shown during tests (QT_QPA_PLATFORM=offscreen causes crashes)
 # Unix/Linux/macOS: Headless testing with offscreen platform
@@ -31,6 +32,12 @@ mypy:
 
 pre-commit:
 	pre-commit run --all-files
+
+pylint-sort-check:
+	pylint src tests --disable=all --enable=unsorted-functions,unsorted-methods
+
+pylint-sort-check-all:
+	pylint src tests
 
 publish-to-pypi:
 	uv build

@@ -36,6 +36,8 @@ dev-dependencies = [
     "sphinx-autodoc-typehints>=2.3.0",
     "sphinx-click-rst-to-ansi-formatter>=0.1.1",
     "types-requests>=2.32.0.20240914",
+    "pylint>=3.3.0",
+    "pylint-sort-functions>=0.1.2",
 ]
 
 [project.scripts]

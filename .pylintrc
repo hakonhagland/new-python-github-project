@@ -1,0 +1,11 @@
+[MASTER]
+# Load the pylint-sort-functions plugin
+load-plugins=pylint_sort_functions
+
+[MESSAGES CONTROL]
+# Enable the sorting checks
+enable=unsorted-functions,unsorted-methods
+
+[DESIGN]
+# Maximum number of lines in a module
+max-module-lines=1000

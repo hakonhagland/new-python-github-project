@@ -87,6 +87,10 @@ make ruff-check
 make ruff-fix
 make ruff-format
 
+# Check function/method sorting (enforces CLAUDE.md style guide)
+make pylint-sort-check  # Only check sorting
+make pylint-sort-check-all  # Run full pylint analysis
+
 # Coverage (requires 100%)
 coverage run -m pytest tests
 coverage report -m
