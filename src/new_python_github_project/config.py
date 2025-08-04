@@ -61,6 +61,11 @@ class Config:
         ).joinpath("default_config.ini")
         shutil.copyfile(str(default_config), str(path))
 
+    # ConfigParser delegation methods
+    def get(self, section: str, option: str, **kwargs: typing.Any) -> str:
+        """Delegate to ConfigParser.get()."""
+        return self.config.get(section, option, **kwargs)
+
     def get_config_dir(self) -> Path:
         config_dir = platformdirs.user_config_dir(appname=self.appname)
         path = Path(config_dir)
@@ -125,6 +130,18 @@ class Config:
                 template = fp.read()
         return template
 
+    def getboolean(self, section: str, option: str, **kwargs: typing.Any) -> bool:
+        """Delegate to ConfigParser.getboolean()."""
+        return self.config.getboolean(section, option, **kwargs)
+
+    def getfloat(self, section: str, option: str, **kwargs: typing.Any) -> float:
+        """Delegate to ConfigParser.getfloat()."""
+        return self.config.getfloat(section, option, **kwargs)
+
+    def getint(self, section: str, option: str, **kwargs: typing.Any) -> int:
+        """Delegate to ConfigParser.getint()."""
+        return self.config.getint(section, option, **kwargs)
+
     def read_config(self) -> None:
         path = self.get_config_file()
         if path.exists():
@@ -158,20 +175,3 @@ class Config:
         """Write the lockfile."""
         lockfile = self.get_lockfile_path()
         lockfile.write_text(str(os.getpid()))
-
-    # ConfigParser delegation methods
-    def get(self, section: str, option: str, **kwargs: typing.Any) -> str:
-        """Delegate to ConfigParser.get()."""
-        return self.config.get(section, option, **kwargs)
-
-    def getboolean(self, section: str, option: str, **kwargs: typing.Any) -> bool:
-        """Delegate to ConfigParser.getboolean()."""
-        return self.config.getboolean(section, option, **kwargs)
-
-    def getfloat(self, section: str, option: str, **kwargs: typing.Any) -> float:
-        """Delegate to ConfigParser.getfloat()."""
-        return self.config.getfloat(section, option, **kwargs)
-
-    def getint(self, section: str, option: str, **kwargs: typing.Any) -> int:
-        """Delegate to ConfigParser.getint()."""
-        return self.config.getint(section, option, **kwargs)

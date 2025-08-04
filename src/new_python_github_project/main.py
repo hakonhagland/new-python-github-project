@@ -9,7 +9,7 @@ from new_python_github_project.logging_handlers import setup_pre_fork_logging
 from new_python_github_project.main_window import MainWindow
 
 # Explicitly export runtime for test access
-__all__ = ["main", "create", "edit_config", "runtime"]
+__all__ = ["create", "edit_config", "main", "runtime"]
 
 
 @click.group()
